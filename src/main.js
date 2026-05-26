@@ -5,6 +5,8 @@ import { FALLBACK_PLANTS, getRandomFallback, findFallbackByName } from './plants
 import { audio } from './audio.js';
 import { analyzePlantImage } from './gemini.js';
 import { camera } from './camera.js';
+import { AdMob, RewardAdPluginEvents } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 
 // Sound enabled global setting
 let soundEnabled = true;
@@ -213,6 +215,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupTitleSelector();
   setupShop();
   setupGreenhouse();
+  setupAdMob();
   setupLeafDrifts();
   
   // Random Nyan Home message
@@ -2001,4 +2004,112 @@ function renderGreenhouse() {
   if (feedBtn) {
     feedBtn.disabled = state.points < 500;
   }
+}
+
+// --------------------------------------------------------------------------
+// AdMob & Reward Ads Integration
+// --------------------------------------------------------------------------
+function setupAdMob() {
+  const pointsBadge = document.getElementById('header-points-display');
+  if (!pointsBadge) return;
+
+  // Initialize AdMob if native platform
+  if (Capacitor.isNativePlatform()) {
+    AdMob.initialize({
+      requestTrackingAuthorization: true,
+    }).catch(err => console.error('AdMob initialization error:', err));
+  }
+
+  pointsBadge.addEventListener('click', () => {
+    playClickSound();
+
+    if (confirm('📺 スポンサー動画を視聴して 🪙 1,000 pts を獲得するニャ？')) {
+      if (Capacitor.isNativePlatform()) {
+        runNativeRewardAd();
+      } else {
+        runMockRewardAd();
+      }
+    }
+  });
+}
+
+async function runNativeRewardAd() {
+  try {
+    const options = {
+      adId: 'ca-app-pub-3940256099942544/5224354917',
+    };
+
+    // Remove any existing listeners first to avoid duplicate reward firing
+    await AdMob.removeAllListeners();
+
+    let rewardEarned = false;
+
+    // Listeners for reward events
+    await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
+      rewardEarned = true;
+    });
+
+    await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+      if (rewardEarned) {
+        state.points += 1000;
+        state.saveState();
+        updateUI();
+        alert('🎉 動画の視聴が完了したニャ！\n🪙 1,000 pts を獲得したニャ！😻');
+      } else {
+        alert('⚠️ 動画の視聴が途中でキャンセルされたニャ。');
+      }
+    });
+
+    await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (err) => {
+      console.error('Ad failed to load:', err);
+      alert('⚠️ 広告の読み込みに失敗したニャ。通信状況を確認するか、しばらく経ってから試してニャ。');
+    });
+
+    // Prepare and show the ad
+    await AdMob.prepareReward(options);
+    await AdMob.showReward();
+
+  } catch (error) {
+    console.error('Native AdMob error:', error);
+    alert('⚠️ 広告再生中にエラーが発生したニャ。デモ用モック広告を再生するニャ！');
+    runMockRewardAd();
+  }
+}
+
+function runMockRewardAd() {
+  const backdrop = document.getElementById('ad-mock-modal-backdrop');
+  const timerText = document.getElementById('ad-mock-timer');
+  const icon = document.getElementById('ad-mock-icon');
+  if (!backdrop || !timerText) return;
+
+  backdrop.style.display = 'flex';
+  let timeLeft = 10;
+  timerText.textContent = `残り ${timeLeft} 秒`;
+
+  // Animate icon during mock play
+  const iconEmojis = ['🐈', '😺', '😸', '😻', '🐾'];
+  let iconIndex = 0;
+
+  const interval = setInterval(() => {
+    timeLeft--;
+    timerText.textContent = `残り ${timeLeft} 秒`;
+    
+    if (icon) {
+      iconIndex = (iconIndex + 1) % iconEmojis.length;
+      icon.textContent = iconEmojis[iconIndex];
+    }
+
+    if (timeLeft <= 0) {
+      clearInterval(interval);
+      backdrop.style.display = 'none';
+
+      // Grant points
+      state.points += 1000;
+      state.saveState();
+      updateUI();
+      
+      if (soundEnabled) audio.playSuccess();
+      alert('🎉 動画の視聴が完了したニャ！\n🪙 1,000 pts を獲得したニャ！😻');
+    }
+  }, 1000);
 }
