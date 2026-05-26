@@ -2062,7 +2062,8 @@ async function runNativeRewardAd() {
 
     await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (err) => {
       console.error('Ad failed to load:', err);
-      alert('⚠️ 広告の読み込みに失敗したニャ。通信状況を確認するか、しばらく経ってから試してニャ。');
+      alert('⚠️ 広告の読み込みに失敗したニャ。代わりにデモ用モック広告を再生するニャ！');
+      runMockRewardAd();
     });
 
     // Prepare and show the ad
