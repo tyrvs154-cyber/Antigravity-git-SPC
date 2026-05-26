@@ -2434,29 +2434,32 @@ function renderGreenhouse() {
       const potEmoji = getPotEmoji(currentPotSkin);
 
       slotEl.innerHTML = `
-        <div class="gh-plant-name">${spec?.name || '謎の草'}</div>
-        
-        <div class="gh-plant-visual">
-          ${stageEmoji}
-        </div>
-        <div class="gh-pot-visual">${potEmoji}</div>
-
-        <div class="gh-progress-container">
-          <div class="gh-progress-bar">
-            <div class="gh-progress-fill" style="width: ${slot.growthProgress}%"></div>
+        <div class="gh-slot-left">
+          <div class="gh-plant-visual">
+            ${stageEmoji}
           </div>
-          <div class="gh-progress-text">成長度: ${Math.floor(slot.growthProgress)}%</div>
+          <div class="gh-pot-visual">${potEmoji}</div>
         </div>
+        <div class="gh-slot-right">
+          <div class="gh-plant-name">${spec?.name || '謎の草'}</div>
+          
+          <div class="gh-progress-container">
+            <div class="gh-progress-bar">
+              <div class="gh-progress-fill" style="width: ${slot.growthProgress}%"></div>
+            </div>
+            <div class="gh-progress-text">成長度: ${Math.floor(slot.growthProgress)}%</div>
+          </div>
 
-        <div class="gh-actions-row">
-          <button class="gh-action-btn-mini gh-water-btn" data-slot-id="${i}">
-            💧 水やり
-            <span class="gh-btn-sublabel">ミニゲーム</span>
-          </button>
-          <button class="gh-action-btn-mini gh-fertilizer-btn" data-slot-id="${i}">
-            ✨ 栄養剤
-            <span class="gh-btn-sublabel">🪙 ${GREENHOUSE_CONFIG.fertilizerCost}pts</span>
-          </button>
+          <div class="gh-actions-row">
+            <button class="gh-action-btn-mini gh-water-btn" data-slot-id="${i}">
+              💧 水やり
+              <span class="gh-btn-sublabel">ミニ</span>
+            </button>
+            <button class="gh-action-btn-mini gh-fertilizer-btn" data-slot-id="${i}">
+              ✨ 栄養剤
+              <span class="gh-btn-sublabel">🪙${GREENHOUSE_CONFIG.fertilizerCost}p</span>
+            </button>
+          </div>
         </div>
       `;
 
@@ -2487,24 +2490,27 @@ function renderGreenhouse() {
       const checkboxHtml = `
         <label class="gh-breed-checkbox-label" data-slot-id="${i}">
           <input type="checkbox" class="gh-breed-check" data-slot-id="${i}" ${isChecked ? 'checked' : ''}>
-          🧬 交配選ぶ
+          🧬 交配
         </label>
       `;
 
       slotEl.innerHTML = `
         ${checkboxHtml}
-        <div class="gh-plant-name" style="color: #d97706;">💮 開花！</div>
-        
-        <div class="gh-plant-visual">
-          ${spec?.emoji || '🌸'}
-        </div>
-        <div class="gh-pot-visual">${potEmoji}</div>
-
-        <div class="gh-harvest-box">
-          <div class="gh-accumulated-points">
-            🪙 <span class="gh-pts-val">${Math.floor(slot.accumulatedPoints)}</span> pts
+        <div class="gh-slot-left">
+          <div class="gh-plant-visual">
+            ${spec?.emoji || '🌸'}
           </div>
-          <button class="gh-harvest-btn" data-slot-id="${i}">🧺 収穫する</button>
+          <div class="gh-pot-visual">${potEmoji}</div>
+        </div>
+        <div class="gh-slot-right">
+          <div class="gh-plant-name" style="color: #d97706; margin-bottom: 6px;">💮 開花 (${spec?.name || '新種'})</div>
+          
+          <div class="gh-harvest-box">
+            <div class="gh-accumulated-points">
+              🪙<span class="gh-pts-val">${Math.floor(slot.accumulatedPoints)}</span>p
+            </div>
+            <button class="gh-harvest-btn" data-slot-id="${i}">🧺 収穫</button>
+          </div>
         </div>
       `;
 
