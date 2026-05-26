@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>はなみっけ | お散歩植物コレクション</title>
+  <!-- Outfit (for numbers/UI) and Zen Maru Gothic (for cute rounded Japanese) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <!-- Floating leaf container -->
+  <div id="leaves-container"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="logo-icon">🌸</span>
+        <h1 class="logo-title">はなみっけ</h1>
+      </div>
+      <div class="header-right">
+        <div class="header-stats-wrapper">
+          <div class="header-title-badge" id="header-title-display">たまご学者ニャ</div>
+          <div class="point-badge" id="header-points-display">
+            <span class="coin-icon">🪙</span>
+            <span class="point-value" id="total-points-count">0</span>
+            <span class="point-unit">pts</span>
+          </div>
+        </div>
+        <button class="settings-btn" id="open-settings-btn" aria-label="設定">
+          ⚙️
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Screens -->
+    <main class="app-main">
+      
+      <!-- SCREEN: HOME -->
+      <section id="screen-home" class="app-screen active">
+        <!-- Dr. Nyan Greeting Area -->
+        <div class="nyan-greeting-card">
+          <div class="nyan-avatar-container">
+            <!-- Cute SVG Animated Dr. Nyan -->
+            <svg class="nyan-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <!-- Shadow -->
+              <ellipse cx="50" cy="90" rx="30" ry="6" fill="#e2ede8" />
+              
+              <!-- Tail -->
+              <path class="nyan-tail" d="M 75 75 Q 85 70 80 55 T 90 40" fill="none" stroke="#E6D3BE" stroke-width="6" stroke-linecap="round" />
+              
+              <!-- Body -->
+              <path d="M 30 75 Q 30 50 50 50 T 70 75 Z" fill="#F3E5D8" />
+              <!-- Lab Coat Body -->
+              <path d="M 35 75 Q 35 60 50 60 T 65 75 Z" fill="#FFFFFF" />
+              <path d="M 50 60 L 50 75" stroke="#D3E2DC" stroke-width="1.5" />
+              <!-- Collar/Stethoscope/Leaf pocket -->
+              <polygon points="46,65 50,60 54,65" fill="#7FA998" />
+              <rect x="56" y="66" width="6" height="6" rx="1.5" fill="#7FA998" /> <!-- Green pocket -->
+              <path d="M 57 64 L 61 64" stroke="#4a5f56" stroke-width="1.5" /> <!-- Pocket pen -->
+              
+              <!-- Head -->
+              <circle cx="50" cy="42" r="22" fill="#F3E5D8" />
+              <!-- Ears -->
+              <polygon points="30,28 32,10 44,22" fill="#E6D3BE" />
+              <polygon points="33,26 35,13 42,21" fill="#F6C3C3" /> <!-- Inner Ear L -->
+              <polygon points="70,28 68,10 56,22" fill="#E6D3BE" />
+              <polygon points="67,26 65,13 58,21" fill="#F6C3C3" /> <!-- Inner Ear R -->
+              
+              <!-- Face Details -->
+              <!-- Tabby Markings -->
+              <path d="M 45 22 Q 50 25 55 22" fill="none" stroke="#D5BEA6" stroke-width="2" stroke-linecap="round" />
+              <path d="M 47 25 Q 50 28 53 25" fill="none" stroke="#D5BEA6" stroke-width="2" stroke-linecap="round" />
+              
+              <!-- Glasses -->
+              <circle cx="41" cy="43" r="7" fill="none" stroke="#4A3B32" stroke-width="2" />
+              <circle cx="59" cy="43" r="7" fill="none" stroke="#4A3B32" stroke-width="2" />
+              <line x1="48" y1="43" x2="52" y2="43" stroke="#4A3B32" stroke-width="2" />
+              
+              <!-- Eyes (Blinking animation in CSS) -->
+              <circle class="nyan-eye nyan-eye-l" cx="41" cy="43" r="2" fill="#000000" />
+              <circle class="nyan-eye nyan-eye-r" cx="59" cy="43" r="2" fill="#000000" />
+              
+              <!-- Cheeks -->
+              <circle cx="34" cy="48" r="2.5" fill="#F4B2B2" opacity="0.6" />
+              <circle cx="66" cy="48" r="2.5" fill="#F4B2B2" opacity="0.6" />
+              
+              <!-- Nose & Mouth -->
+              <polygon points="50,47 48,45 52,45" fill="#F4B2B2" />
+              <path d="M 47 49 Q 50 51 50 49 Q 50 51 53 49" fill="none" stroke="#4A3B32" stroke-width="1.5" stroke-linecap="round" />
+              
+              <!-- Whiskers -->
+              <line x1="28" y1="46" x2="20" y2="44" stroke="#B4A292" stroke-width="1" />
+              <line x1="28" y1="49" x2="19" y2="49" stroke="#B4A292" stroke-width="1" />
+              <line x1="72" y1="46" x2="80" y2="44" stroke="#B4A292" stroke-width="1" />
+              <line x1="72" y1="49" x2="81" y2="49" stroke="#B4A292" stroke-width="1" />
+            </svg>
+          </div>
+          <div class="nyan-speech-bubble">
+            <div class="bubble-arrow"></div>
+            <p id="nyan-home-speech">お散歩日和であるニャ！道端の可愛いお花や不思議な草葉を見つけたら、ワシに見せてほしいニャ！</p>
+          </div>
+        </div>
+
+        <!-- Level Progress Container -->
+        <div class="home-progress-card">
+          <div class="progress-info">
+            <div class="level-info">
+              <span class="lvl-lbl">研究レベル</span>
+              <span class="lvl-val" id="user-level-val">1</span>
+            </div>
+            <div class="title-info">
+              <span class="title-lbl">称号:</span>
+              <span class="title-val" id="user-title-val">たまご学者</span>
+            </div>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="level-progress-bar-fill" style="width: 0%;">
+              <span class="progress-glow"></span>
+            </div>
+            <span class="progress-leaf">🌱</span>
+          </div>
+          <div class="progress-points">
+            <span id="level-progress-detail">あと 150 pts でレベルUPニャ</span>
+          </div>
+        </div>
+
+        <!-- Quick Stats Grid -->
+        <div class="home-stats-grid">
+          <div class="stat-card">
+            <span class="stat-icon">📖</span>
+            <div class="stat-nums">
+              <span class="stat-count" id="stat-count-collected">0</span>
+              <span class="stat-lbl">見つけた植物</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">✨</span>
+            <div class="stat-nums">
+              <span class="stat-count" id="stat-count-rare">0</span>
+              <span class="stat-lbl">レア植物</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">🏅</span>
+            <div class="stat-nums">
+              <span class="stat-count" id="stat-count-badges">0</span>
+              <span class="stat-lbl">集めたバッジ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scan CTA Card -->
+        <div class="home-scan-cta">
+          <div class="cta-bg-blobs">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+          </div>
+          <div class="cta-content">
+            <h3>さっそく街へ出て植物を探そう！</h3>
+            <p>カメラで撮るだけで、ニャン博士が鑑定してポイントをつけてくれるニャ！</p>
+            <button class="cta-button" id="home-start-scan-btn">
+              <span class="btn-icon">📷</span>植物をみっける！
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN: SCAN -->
+      <section id="screen-scan" class="app-screen">
+        <div class="scan-header-bar">
+          <h2>植物スキャン</h2>
+          <span class="scan-mode-indicator" id="scan-mode-lbl">デモモード</span>
+        </div>
+
+        <!-- Viewfinder Area -->
+        <div class="scanner-viewfinder-container">
+          <div class="scanner-border-corners"></div>
+          
+          <!-- Live Video Stream -->
+          <video id="webcam" autoplay playsinline style="display: none;"></video>
+          
+          <!-- Captured Canvas Overlay (hidden/visible during scan) -->
+          <canvas id="hidden-canvas" style="display: none;"></canvas>
+          
+          <!-- Silhouette/Placeholder when camera not loaded -->
+          <div class="scanner-placeholder" id="scanner-placeholder-img">
+            <span class="placeholder-emoji">📷</span>
+            <p>カメラを起動中ニャ…</p>
+            <button class="small-outline-btn" id="retry-camera-btn">カメラを起動</button>
+          </div>
+
+          <!-- Selected Preview Frame (for local file upload/sample select) -->
+          <div class="scanner-preview-frame" id="scanner-preview-frame" style="display: none;">
+            <img id="scanner-preview-img" src="" alt="スキャン画像">
+            <button class="clear-preview-btn" id="clear-preview-btn" aria-label="プレビューをクリア">✕</button>
+          </div>
+
+          <!-- Pulsing Laser Line -->
+          <div class="scanner-laser-line" id="scanner-laser"></div>
+        </div>
+
+        <!-- Controls Area -->
+        <div class="scanner-controls">
+          <!-- File upload hidden input -->
+          <input type="file" id="image-upload" accept="image/*" style="display: none;">
+          
+          <button class="control-circle-btn outline" id="trigger-upload-btn" title="画像をアップロード">
+            📂
+          </button>
+          
+          <button class="control-trigger-btn" id="take-snapshot-btn">
+            <span class="btn-inner"></span>
+          </button>
+          
+          <button class="control-circle-btn outline" id="toggle-camera-btn" title="カメラ切り替え">
+            🔄
+          </button>
+        </div>
+
+        <!-- Sample Plants for Desktop Testing -->
+        <div class="sample-plants-panel">
+          <div class="panel-header">
+            <h4>📱 カメラがない時は、以下のサンプルをタップしてスキャンするニャ！</h4>
+          </div>
+          <div class="samples-scroll-wrapper">
+            <div class="samples-grid">
+              <div class="sample-plant-card" data-index="0">
+                <img src="/images/clover.png" alt="クローバー">
+                <span class="sample-name">シロツメクサ</span>
+              </div>
+              <div class="sample-plant-card" data-index="1">
+                <img src="/images/dandelion.png" alt="タンポポ">
+                <span class="sample-name">タンポポ</span>
+              </div>
+              <div class="sample-plant-card" data-index="2">
+                <img src="/images/sakura.png" alt="サクラ">
+                <span class="sample-name">サクラ</span>
+              </div>
+              <div class="sample-plant-card" data-index="3">
+                <img src="/images/monstera.png" alt="モンステラ">
+                <span class="sample-name">モンステラ</span>
+              </div>
+              <div class="sample-plant-card" data-index="4">
+                <img src="/images/venus_flytrap.png" alt="ハエトリソウ">
+                <span class="sample-name">ハエトリソウ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading Scanner Overlay -->
+        <div class="scanner-loading-overlay" id="scanner-loading">
+          <div class="loading-content-card">
+            <div class="nyan-loading-icon">
+              <!-- Dr. Nyan Magnifying Glass -->
+              <span class="loading-paw">🐾</span>
+              <span class="loading-glass">🔍</span>
+            </div>
+            <h4>ニャン博士が鑑定中ニャ…</h4>
+            <p>写真の特徴を調べているから、ちょっと待つニャ！</p>
+            <div class="loading-bar-container">
+              <div class="loading-bar-fill"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN: ZUKAN (図鑑) -->
+      <section id="screen-zukan" class="app-screen">
+        <div class="zukan-header-bar">
+          <h2>植物図鑑</h2>
+          <div class="zukan-stats-bubble">
+            合計 <span id="zukan-discovered-count">0</span> 枚
+          </div>
+        </div>
+
+        <!-- Search and filters -->
+        <div class="zukan-filter-panel">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="zukan-search-input" placeholder="植物の名前で検索...">
+          </div>
+          <div class="filter-row">
+            <div class="tags-container" id="zukan-category-tags">
+              <button class="filter-tag active" data-category="all">すべて</button>
+              <button class="filter-tag" data-category="flowers">お花 🌸</button>
+              <button class="filter-tag" data-category="herbs">野草 🌱</button>
+              <button class="filter-tag" data-category="succulents">観葉・多肉 🪴</button>
+              <button class="filter-tag" data-category="trees">樹木 🌳</button>
+            </div>
+            <select class="sort-select" id="zukan-sort-select">
+              <option value="newest">見つけた順</option>
+              <option value="rarity-desc">レア度（高）</option>
+              <option value="rarity-asc">レア度（低）</option>
+              <option value="alphabetical">五十音順</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Zukan Cards Grid -->
+        <div class="zukan-grid" id="zukan-grid-container">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- SCREEN: BADGES (バッジ) -->
+      <section id="screen-badges" class="app-screen">
+        <div class="badges-header-bar">
+          <h2>研究バッジ</h2>
+          <p>植物を研究して、ニャン博士から勲章をもらうニャ！</p>
+        </div>
+
+        <div class="badges-container" id="badges-grid-container">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="app-nav">
+      <button class="nav-item active" data-screen="home">
+        <span class="nav-icon">🌱</span>
+        <span class="nav-lbl">ホーム</span>
+      </button>
+      <button class="nav-item" data-screen="scan">
+        <span class="nav-icon">📷</span>
+        <span class="nav-lbl">スキャン</span>
+      </button>
+      <button class="nav-item" data-screen="zukan">
+        <span class="nav-icon">📖</span>
+        <span class="nav-lbl">図鑑</span>
+      </button>
+      <button class="nav-item" data-screen="badges">
+        <span class="nav-icon">🏅</span>
+        <span class="nav-lbl">バッジ</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- RESULT MODAL (Appears after scanner successfully processes a plant) -->
+  <div class="result-backdrop" id="result-modal-backdrop">
+    <div class="result-modal">
+      
+      <!-- Top Success Confetti Effect (CSS animated) -->
+      <div class="result-confetti-holder" id="confetti-holder"></div>
+      
+      <div class="result-modal-header">
+        <span class="sparkle-icon">✨</span>
+        <h3>鑑定結果</h3>
+        <span class="sparkle-icon">✨</span>
+      </div>
+
+      <div class="result-modal-scroll">
+        <div class="result-image-panel">
+          <img id="result-photo" src="" alt="見つけた植物">
+          <span class="result-rarity-badge" id="result-rarity-badge">Common</span>
+        </div>
+
+        <div class="result-names">
+          <h2 id="result-plant-name">サクラ</h2>
+          <span id="result-plant-scientific">Cerasus × yedoensis</span>
+        </div>
+
+        <!-- Scores animated breakdown -->
+        <div class="result-scores-card">
+          <div class="score-row">
+            <span>👾 レア度査定:</span>
+            <strong id="result-score-rarity">+0</strong>
+          </div>
+          <div class="score-row">
+            <span>🌸 美しさ査定:</span>
+            <strong id="result-score-beauty">+0</strong>
+          </div>
+          <div class="score-row">
+            <span>📢 有名度査定:</span>
+            <strong id="result-score-fame">+0</strong>
+          </div>
+          <div class="score-divider"></div>
+          <div class="score-total-row">
+            <span>合計獲得ポイント:</span>
+            <span class="points-gain" id="result-score-total">0 pts</span>
+          </div>
+        </div>
+
+        <!-- Dr. Nyan's Appraisal Comment Box -->
+        <div class="result-nyan-comment">
+          <div class="nyan-mini-face">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="45" fill="#F3E5D8" />
+              <!-- Ears -->
+              <polygon points="15,25 25,5 40,25" fill="#E6D3BE" />
+              <polygon points="85,25 75,5 60,25" fill="#E6D3BE" />
+              <!-- Glasses -->
+              <circle cx="35" cy="50" r="12" fill="none" stroke="#4A3B32" stroke-width="3" />
+              <circle cx="65" cy="50" r="12" fill="none" stroke="#4A3B32" stroke-width="3" />
+              <line x1="47" y1="50" x2="53" y2="50" stroke="#4A3B32" stroke-width="3" />
+              <circle cx="35" cy="50" r="3" fill="#000000" />
+              <circle cx="65" cy="50" r="3" fill="#000000" />
+              <polygon points="50,56 47,53 53,53" fill="#F4B2B2" />
+              <path d="M 45 59 Q 50 61 50 59 Q 50 61 55 59" fill="none" stroke="#4A3B32" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div class="comment-bubble">
+            <div class="cb-arrow"></div>
+            <h5>ニャン博士の鑑定コメント:</h5>
+            <p id="result-nyan-speech">よく見かける植物ニャ！緑が綺麗であるニャ。</p>
+          </div>
+        </div>
+
+        <!-- Plant Description -->
+        <div class="result-details-text">
+          <h5>植物の特徴:</h5>
+          <p id="result-plant-description">説明文がここに表示されるニャ！</p>
+        </div>
+
+        <!-- Memo Input Area -->
+        <div class="result-memo-card">
+          <h5>📝 観察メモを残すニャ (自由入力):</h5>
+          <textarea id="result-memo-input" placeholder="例：日当たりのいい公園の遊具の近くで見つけたニャ！" rows="2"></textarea>
+        </div>
+      </div>
+
+      <div class="result-modal-actions">
+        <button class="modal-primary-btn" id="register-plant-btn">
+          図鑑に登録してポイントを貯めるニャ！
+        </button>
+        <button class="modal-secondary-btn" id="cancel-scan-btn">
+          撮り直す
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="settings-backdrop" id="settings-modal-backdrop">
+    <div class="settings-modal">
+      <div class="settings-header">
+        <h3>⚙️ 設定・AI連携</h3>
+        <button class="settings-close-btn" id="settings-close-btn">✕</button>
+      </div>
+      
+      <div class="settings-scroll-content">
+        <!-- AI Settings -->
+        <div class="settings-section">
+          <h4>🤖 画像解析モード</h4>
+          <div class="mode-toggle-group">
+            <button class="mode-toggle-btn active" id="mode-demo-btn">デモモード (内蔵)</button>
+            <button class="mode-toggle-btn" id="mode-gemini-btn">リアルAIモード (Gemini)</button>
+          </div>
+          
+          <div class="settings-explanation">
+            <p><strong>デモモード:</strong> カメラが無くてもサンプルからスキャンでき、内蔵の植物図鑑（11種類）を鑑定シミュレーションします。</p>
+            <p><strong>リアルAIモード:</strong> Gemini 2.5 Flash APIを使用します。街のどんな植物でもGoogleレンズのようにAIが撮影写真から自動で識別・査定するニャ！</p>
+          </div>
+        </div>
+
+        <div class="settings-section" id="api-key-section" style="display: none;">
+          <h4>🔑 Gemini API キー登録</h4>
+          <p class="api-help-text">
+            Gemini APIを使用するには、個人のAPIキーが必要です。キーは無料で数分で取得でき、端末内（LocalStorage）にのみ安全に保存されます。<br>
+            👉 <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio から無料でキーを取得</a>
+          </p>
+          <div class="api-key-input-container">
+            <input type="password" id="api-key-input" placeholder="AIキーを入力 (AIzaSy...)">
+            <button class="save-key-btn" id="save-api-key-btn">保存</button>
+          </div>
+          <span class="api-status-msg" id="api-key-status">APIキーは未登録ニャ</span>
+          
+          <h4 style="margin-top: 15px;">🤖 AIモデルの選択</h4>
+          <p class="api-help-text">鑑定に使用するGeminiのモデルを変更できるニャ！</p>
+          <div class="api-model-container" style="margin-top: 5px;">
+            <select id="api-model-select" class="sort-select" style="width: 100%; height: 40px; padding: 0 10px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); font-family: inherit; font-size: 14px; color: var(--color-text-dark); background-color: var(--color-card-white);">
+              <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sound settings -->
+        <div class="settings-section">
+          <h4>🔊 効果音設定</h4>
+          <div class="sound-toggle-row">
+            <span>効果音（Web Audio 合成）:</span>
+            <label class="switch">
+              <input type="checkbox" id="sound-toggle" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="settings-section danger-zone">
+          <h4>⚠️ データの管理</h4>
+          <p>これまでのポイントや図鑑データ、バッジの獲得記録をすべてリセットするニャ。</p>
+          <button class="danger-btn" id="reset-state-btn">データを完全に初期化する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL UP POPUP -->
+  <div class="levelup-backdrop" id="levelup-popup-backdrop">
+    <div class="levelup-card">
+      <div class="levelup-confetti"></div>
+      <span class="levelup-crown">👑</span>
+      <h2>LEVEL UP!</h2>
+      <p class="levelup-subtitle">研究レベルが上がったニャ！</p>
+      
+      <div class="levelup-stats">
+        <div class="lvl-circle">
+          <span class="lvl-old" id="lvl-popup-old">1</span>
+          <span class="lvl-arrow">➔</span>
+          <span class="lvl-new" id="lvl-popup-new">2</span>
+        </div>
+        <div class="title-unlock">
+          <span class="tu-lbl">新しい称号を獲得ニャ！</span>
+          <h3 class="tu-val" id="lvl-popup-title">みならい学者</h3>
+        </div>
+      </div>
+
+      <button class="levelup-close-btn" id="levelup-popup-close-btn">
+        ありがとうニャ！
+      </button>
+    </div>
+  </div>
+
+  <!-- Zukan Detail Modal (Slides up) -->
+  <div class="detail-sheet-backdrop" id="zukan-detail-backdrop">
+    <div class="detail-sheet" id="zukan-detail-sheet">
+      <div class="sheet-drag-bar"></div>
+      <button class="sheet-close-btn" id="zukan-detail-close-btn" aria-label="閉じる">✕</button>
+      
+      <div class="sheet-scroll-content">
+        <div class="sheet-hero">
+          <img id="detail-plant-img" src="" alt="植物写真">
+          <span class="detail-rarity-badge" id="detail-rarity-badge">Common</span>
+        </div>
+        
+        <div class="sheet-meta">
+          <div class="sheet-names">
+            <h3 id="detail-plant-name">シロツメクサ</h3>
+            <span id="detail-plant-scientific">Trifolium repens</span>
+          </div>
+          <div class="detail-collect-date" id="detail-collect-date">
+            登録日: 2026-05-26
+          </div>
+        </div>
+
+        <!-- Point breakdown -->
+        <div class="sheet-points-breakdown">
+          <h4>獲得査定ポイント</h4>
+          <div class="pts-breakdown-grid">
+            <div class="pts-item">
+              <span class="pts-lbl">レア度</span>
+              <span class="pts-val" id="detail-pt-rarity">+10</span>
+            </div>
+            <div class="pts-item">
+              <span class="pts-lbl">美しさ</span>
+              <span class="pts-val" id="detail-pt-beauty">+20</span>
+            </div>
+            <div class="pts-item">
+              <span class="pts-lbl">有名度</span>
+              <span class="pts-val" id="detail-pt-fame">+35</span>
+            </div>
+            <div class="pts-item total">
+              <span class="pts-lbl">合計</span>
+              <span class="pts-val" id="detail-pt-total">65 pts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="sheet-desc-card">
+          <h4>植物のひみつ</h4>
+          <p id="detail-plant-desc">説明がここに入ります。</p>
+        </div>
+
+        <!-- Custom User Memo -->
+        <div class="sheet-memo-card">
+          <div class="sheet-memo-header">
+            <h4>📝 マイ観察メモ</h4>
+            <button class="small-memo-btn" id="detail-memo-edit-btn">編集</button>
+          </div>
+          <div class="sheet-memo-display" id="detail-memo-display-mode">
+            <p id="detail-plant-memo">メモはありません。</p>
+          </div>
+          <div class="sheet-memo-edit" id="detail-memo-edit-mode" style="display: none;">
+            <textarea id="detail-plant-memo-textarea" rows="3" placeholder="見つけた場所や感想などをメモできるニャ！"></textarea>
+            <button class="save-memo-btn" id="detail-memo-save-btn">保存</button>
+          </div>
+        </div>
+
+        <!-- Dr. Nyan's Comment -->
+        <div class="sheet-comment-card">
+          <div class="comment-author">
+            <div class="author-avatar">😺</div>
+            <h5>ニャン博士の鑑定コメント</h5>
+          </div>
+          <div class="comment-speech">
+            <p id="detail-plant-comment">コメントがここに入りますニャ。</p>
+          </div>
+        </div>
+
+        <!-- Delete Action -->
+        <div class="sheet-delete-action">
+          <button class="delete-plant-btn" id="detail-plant-delete-btn">
+            🗑️ この登録を削除する
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX MODAL (For enlarging Zukan photos) -->
+  <div class="lightbox-backdrop" id="lightbox-modal-backdrop">
+    <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="閉じる">✕</button>
+    <div class="lightbox-content">
+      <img id="lightbox-img" src="" alt="拡大画像">
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

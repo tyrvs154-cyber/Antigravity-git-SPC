@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">はなみっけ</string>
+    <string name="title_activity_main">はなみっけ</string>
+    <string name="package_name">com.hanamikke.app</string>
+    <string name="custom_url_scheme">com.hanamikke.app</string>
+</resources>
