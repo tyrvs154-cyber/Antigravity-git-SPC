@@ -2119,11 +2119,56 @@ function triggerPointsFloatEffect(element, points) {
   }, 1200);
 }
 
-function getPotEmoji(skin) {
-  if (skin === 'clay') return '🐾';
-  if (skin === 'gold') return '👑';
-  return '🟫';
+function getPotHtml(skin) {
+  const potSrc = './src/assets/images/gh_pot_pixel.png';
+  return `<img src="${potSrc}" class="gh-pot-image pot-${skin}" alt="鉢">`;
 }
+
+function getPlantHtml(plantId, currentStage = 4) {
+  let assetName = '';
+  const lowerId = plantId.toLowerCase();
+  
+  if (lowerId.includes('clover') || lowerId.includes('シロツメクサ') || lowerId.includes('clover_illustration')) {
+    assetName = 'clover';
+  } else if (lowerId.includes('dandelion') || lowerId.includes('タンポポ') || lowerId.includes('dandelion_illustration')) {
+    assetName = 'dandelion';
+  } else if (lowerId.includes('sakura') || lowerId.includes('サクラ') || lowerId.includes('cherry_blossom_illustration')) {
+    assetName = 'sakura';
+  } else if (lowerId.includes('monstera') || lowerId.includes('モンステラ') || lowerId.includes('monstera_illustration')) {
+    assetName = 'monstera';
+  } else if (lowerId.includes('venus') || lowerId.includes('ハエトリソウ') || lowerId.includes('venus_flytrap_illustration')) {
+    assetName = 'venus';
+  }
+
+  const isHybrid = state.ghRecords[plantId] || plantId.startsWith('hybrid_') || lowerId.includes('hybrid');
+  if (isHybrid) {
+    const parentTypes = ['clover', 'dandelion', 'sakura', 'monstera', 'venus'];
+    const charSum = plantId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const idx = Math.abs(charSum) % parentTypes.length;
+    const hybridAsset = parentTypes[idx];
+    return `<img src="./src/assets/images/gh_plant_${hybridAsset}.png" class="gh-plant-image gh-plant-hybrid" alt="交配種">`;
+  }
+
+  if (assetName) {
+    let scale = 1.0;
+    let filter = '';
+    if (currentStage === 1) {
+      scale = 0.45;
+      filter = 'saturate(0.5) brightness(0.9)';
+    } else if (currentStage === 2) {
+      scale = 0.7;
+    } else if (currentStage === 3) {
+      scale = 0.9;
+    }
+    
+    return `<img src="./src/assets/images/gh_plant_${assetName}.png" class="gh-plant-image" style="transform: scale(${scale}); ${filter ? 'filter: ' + filter + ';' : ''}" alt="植物">`;
+  }
+
+  const spec = state.getPlantSpec(plantId);
+  const emoji = spec?.emoji || '🌱';
+  return `<span style="font-size: 32px;">${emoji}</span>`;
+}
+
 
 function renderGreenhouseRealtimeOnly() {
   const now = Date.now();
@@ -2371,9 +2416,26 @@ function renderCultivationRecords() {
 function renderGreenhouse() {
   const gridContainer = document.getElementById('gh-slots-grid');
   const potSelect = document.getElementById('gh-pot-select');
+  const inventoryBar = document.getElementById('gh-seeds-inventory-bar');
   if (!gridContainer) return;
 
   gridContainer.innerHTML = '';
+
+  if (inventoryBar) {
+    inventoryBar.innerHTML = '';
+    const seedIds = Object.keys(state.ghSeeds).filter(id => state.ghSeeds[id] > 0);
+    if (seedIds.length === 0) {
+      inventoryBar.innerHTML = `<span class="gh-no-seeds">🎒 所持タネ: なしニャ（お散歩スキャンでタネを獲得するニャ！）</span>`;
+    } else {
+      const itemsHtml = seedIds.map(seedId => {
+        const spec = state.getPlantSpec(seedId);
+        const count = state.ghSeeds[seedId];
+        if (!spec) return '';
+        return `<span class="gh-inventory-badge" title="${spec.name}">${spec.emoji} x${count}</span>`;
+      }).filter(h => h !== '').join('');
+      inventoryBar.innerHTML = `<span class="gh-inventory-title">🎒 所持タネ:</span> ${itemsHtml}`;
+    }
+  }
 
   const currentPotSkin = state.ghActivePot || 'default';
   if (potSelect) potSelect.value = currentPotSkin;
@@ -2430,15 +2492,14 @@ function renderGreenhouse() {
     else if (slot.status === 'growing') {
       slotEl.classList.add('growing');
       const spec = state.getPlantSpec(slot.plantId);
-      const stageEmoji = getStageEmoji(slot.currentStage, spec?.emoji);
-      const potEmoji = getPotEmoji(currentPotSkin);
+      const potHtml = getPotHtml(currentPotSkin);
 
       slotEl.innerHTML = `
         <div class="gh-slot-left">
           <div class="gh-plant-visual">
-            ${stageEmoji}
+            ${getPlantHtml(slot.plantId, slot.currentStage)}
           </div>
-          <div class="gh-pot-visual">${potEmoji}</div>
+          <div class="gh-pot-visual">${potHtml}</div>
         </div>
         <div class="gh-slot-right">
           <div class="gh-plant-name">${spec?.name || '謎の草'}</div>
@@ -2484,7 +2545,7 @@ function renderGreenhouse() {
     else if (slot.status === 'mature') {
       slotEl.classList.add('mature');
       const spec = state.getPlantSpec(slot.plantId);
-      const potEmoji = getPotEmoji(currentPotSkin);
+      const potHtml = getPotHtml(currentPotSkin);
 
       const isChecked = selectedBreedSlots.includes(i);
       const checkboxHtml = `
@@ -2498,9 +2559,9 @@ function renderGreenhouse() {
         ${checkboxHtml}
         <div class="gh-slot-left">
           <div class="gh-plant-visual">
-            ${spec?.emoji || '🌸'}
+            ${getPlantHtml(slot.plantId, 4)}
           </div>
-          <div class="gh-pot-visual">${potEmoji}</div>
+          <div class="gh-pot-visual">${potHtml}</div>
         </div>
         <div class="gh-slot-right">
           <div class="gh-plant-name" style="color: #d97706; margin-bottom: 6px;">💮 開花 (${spec?.name || '新種'})</div>

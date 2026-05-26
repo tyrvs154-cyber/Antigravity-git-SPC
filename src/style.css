@@ -4387,9 +4387,15 @@ input[type="text"], input[type="password"], select, textarea {
 }
 
 /* モーダルのスクロール領域と高さの安全確保 */
-.settings-scroll-content, .result-modal-scroll, .sheet-scroll-content {
+.settings-scroll-content, .result-modal-scroll {
   max-height: 50vh !important; /* 巨大な文字でもスクロールでアクセスできるように */
   overflow-y: auto !important;
+}
+
+.sheet-scroll-content {
+  max-height: none !important; /* 真っ白な余白バグを修正するために制限を解除 */
+  overflow-y: auto !important;
+  flex-grow: 1 !important;
 }
 
 .result-modal, .settings-modal, .detail-sheet {
@@ -4411,4 +4417,141 @@ input[type="text"], input[type="password"], select, textarea {
   font-size: calc(12px * var(--font-scale)) !important;
   padding: 10px !important;
 }
+
+/* 図鑑詳細モーダルの縦並びレイアウト改善 */
+.sheet-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
+}
+
+.sheet-names {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+}
+
+.sheet-names h3 {
+  font-size: calc(16px * var(--font-scale)) !important;
+  margin: 0 !important;
+}
+
+.sheet-names span {
+  font-size: calc(11px * var(--font-scale) * 0.95) !important;
+}
+
+.detail-instance-select-container, .detail-frame-select-container {
+  width: 100% !important;
+  margin-top: 0 !important;
+}
+
+.detail-instance-select-container span, .detail-frame-select-container span {
+  font-size: calc(11px * var(--font-scale) * 0.9) !important;
+}
+
+.detail-collect-date {
+  align-self: flex-start !important;
+  margin-top: 4px !important;
+  font-size: calc(10px * var(--font-scale)) !important;
+}
+
+/* 所持タネインベントリバーのスタイル */
+.gh-seeds-inventory {
+  background: rgba(255, 255, 255, 0.85);
+  border: 2.0px solid var(--color-primary);
+  border-radius: var(--border-radius-sm);
+  padding: 10px 14px !important;
+  margin: 8px 16px 12px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  box-shadow: var(--shadow-soft);
+  z-index: 10 !important;
+}
+
+.gh-inventory-title {
+  font-size: calc(11px * var(--font-scale)) !important;
+  font-weight: 900 !important;
+  color: var(--color-primary-dark);
+}
+
+.gh-inventory-badge {
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-border);
+  border-radius: 50px;
+  padding: 3px 10px !important;
+  font-size: calc(10px * var(--font-scale)) !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.gh-no-seeds {
+  font-size: calc(10px * var(--font-scale)) !important;
+  font-weight: 700 !important;
+  color: var(--color-text-muted);
+  width: 100%;
+  text-align: center;
+}
+
+/* 温室のドット絵背景・アセット適用スタイル */
+#screen-greenhouse {
+  background-image: url('./assets/images/gh_bg_pixel.png') !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  image-rendering: pixelated !important;
+}
+
+/* ドット絵植木鉢画像 */
+.gh-pot-image {
+  width: calc(22px * var(--font-scale)) !important;
+  height: calc(12px * var(--font-scale)) !important;
+  object-fit: contain !important;
+  image-rendering: pixelated !important;
+  margin-top: -10px !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+}
+
+/* ドット絵植物画像 */
+.gh-plant-image {
+  width: calc(32px * var(--font-scale)) !important;
+  height: calc(32px * var(--font-scale)) !important;
+  object-fit: contain !important;
+  image-rendering: pixelated !important;
+}
+
+/* デフォルトスキンとの調整 */
+.gh-pot-visual {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: auto !important;
+}
+
+/* 鉢スキン色調変化 */
+.gh-pot-image.pot-clay {
+  filter: sepia(0.6) hue-rotate(180deg) saturate(1.8) drop-shadow(0 2px 4px rgba(0,0,0,0.15)) !important;
+}
+
+.gh-pot-image.pot-gold {
+  filter: sepia(1) saturate(3) hue-rotate(5deg) brightness(1.2) drop-shadow(0 2px 4px rgba(0,0,0,0.2)) !important;
+}
+
+/* 交配種の虹色アニメーション */
+.gh-plant-hybrid {
+  animation: rainbowHue 6s infinite linear !important;
+}
+
+@keyframes rainbowHue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+
 
