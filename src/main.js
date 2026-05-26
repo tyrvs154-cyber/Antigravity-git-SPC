@@ -133,12 +133,17 @@ const el = {
   titleSelectModalBackdrop: document.getElementById('title-select-modal-backdrop'),
   titleSelectModalCloseBtn: document.getElementById('title-select-modal-close-btn'),
   titleSelectList: document.getElementById('title-select-list'),
+  titleDecoBgSelect: document.getElementById('title-deco-bg-select'),
+  titleDecoColorSelect: document.getElementById('title-deco-color-select'),
+  titleDecoBorderSelect: document.getElementById('title-deco-border-select'),
+  titlePreviewDisplay: document.getElementById('title-preview-display'),
 
   // Shop Modal Elements
   shopModalBackdrop: document.getElementById('shop-modal-backdrop'),
   shopModalCloseBtn: document.getElementById('shop-modal-close-btn'),
   shopPointsCount: document.getElementById('shop-points-count'),
   shopItemsGrid: document.getElementById('shop-items-grid'),
+  shopDescText: document.getElementById('shop-desc-text'),
 
   // Level Up Elements
   levelupPopupBackdrop: document.getElementById('levelup-popup-backdrop'),
@@ -164,9 +169,40 @@ const NYAN_GREETINGS = [
   "ハエトリソウの葉っぱが閉じるスピードは、猫パンチ並みニャ！挟まれたら痛いニャ…。🥩"
 ];
 
+// Helper to apply custom decorations to title elements
+function applyTitleDecos(element) {
+  if (!element) return;
+  const isHeader = element.classList.contains('header-title-badge');
+  element.className = isHeader ? 'header-title-badge' : 'title-val';
+  
+  if (state.appliedTitleBg) {
+    element.classList.add(state.appliedTitleBg);
+  }
+  if (state.appliedTitleColor) {
+    element.classList.add(state.appliedTitleColor);
+  }
+  if (state.appliedTitleBorder) {
+    element.classList.add(state.appliedTitleBorder);
+  }
+}
+
+// Helper to apply app-wide color themes
+function applyAppTheme() {
+  const container = document.querySelector('.app-container');
+  if (!container) return;
+  
+  // Remove existing themes
+  container.classList.remove('theme-sakura', 'theme-night', 'theme-sunset');
+  
+  if (state.appliedTheme && state.appliedTheme !== 'default') {
+    container.classList.add(state.appliedTheme);
+  }
+}
+
 // Initial Setup
 window.addEventListener('DOMContentLoaded', () => {
   // Initialize state
+  applyAppTheme();
   updateUI();
   setupNav();
   setupSettings();
@@ -283,11 +319,13 @@ function updateUI() {
   }
   if (el.userHeaderTitle) {
     el.userHeaderTitle.textContent = state.getTitle();
+    applyTitleDecos(el.userHeaderTitle);
   }
 
   // Update level cards
   el.userLevel.textContent = state.level;
   el.userTitle.textContent = state.getTitle();
+  applyTitleDecos(el.userTitle);
 
   // Progress Bar calculation
   const progress = state.getPointsProgress();
@@ -1156,17 +1194,14 @@ function showZukanDetail(instances) {
     selectContainer.style.display = 'none';
   }
 
-  // Initial draw
-  updateActiveInstanceDisplay(0);
-
-  // Dropdown switch event
+  // Dropdown switch event (clone to clear previous listeners)
   const newSelect = selectElement.cloneNode(true);
   selectElement.parentNode.replaceChild(newSelect, selectElement);
   newSelect.addEventListener('change', (e) => {
     updateActiveInstanceDisplay(parseInt(e.target.value, 10));
   });
 
-  // Photo frame select switch event listener
+  // Photo frame select switch event listener (clone to clear previous listeners)
   if (el.detailFrameSelect) {
     const newFrameSelect = el.detailFrameSelect.cloneNode(true);
     el.detailFrameSelect.parentNode.replaceChild(newFrameSelect, el.detailFrameSelect);
@@ -1189,6 +1224,9 @@ function showZukanDetail(instances) {
       renderZukanGrid();
     });
   }
+
+  // Initial draw (called after clone/replace, so the newly cloned dropdown gets the correct value)
+  updateActiveInstanceDisplay(0);
 
   // Reset edit modes
   el.detailMemoDisplayMode.style.display = 'block';
@@ -1369,6 +1407,54 @@ function setupTitleSelector() {
 
   if (!modal || !closeBtn || !list) return;
 
+  const updatePreview = () => {
+    if (el.titlePreviewDisplay) {
+      el.titlePreviewDisplay.textContent = state.getTitle();
+      applyTitleDecos(el.titlePreviewDisplay);
+    }
+  };
+
+  const populateDecoSelects = () => {
+    if (el.titleDecoBgSelect) {
+      el.titleDecoBgSelect.innerHTML = '<option value="">なし (デフォルト)</option>';
+      SHOP_TITLE_BGS.forEach(item => {
+        if (state.unlockedTitleBgs.includes(item.id)) {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          opt.textContent = item.name;
+          el.titleDecoBgSelect.appendChild(opt);
+        }
+      });
+      el.titleDecoBgSelect.value = state.appliedTitleBg || '';
+    }
+
+    if (el.titleDecoColorSelect) {
+      el.titleDecoColorSelect.innerHTML = '<option value="">なし (デフォルト)</option>';
+      SHOP_TITLE_COLORS.forEach(item => {
+        if (state.unlockedTitleColors.includes(item.id)) {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          opt.textContent = item.name;
+          el.titleDecoColorSelect.appendChild(opt);
+        }
+      });
+      el.titleDecoColorSelect.value = state.appliedTitleColor || '';
+    }
+
+    if (el.titleDecoBorderSelect) {
+      el.titleDecoBorderSelect.innerHTML = '<option value="">なし (デフォルト)</option>';
+      SHOP_TITLE_BORDERS.forEach(item => {
+        if (state.unlockedTitleBorders.includes(item.id)) {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          opt.textContent = item.name;
+          el.titleDecoBorderSelect.appendChild(opt);
+        }
+      });
+      el.titleDecoBorderSelect.value = state.appliedTitleBorder || '';
+    }
+  };
+
   const renderTitleList = () => {
     list.innerHTML = '';
     const availableTitles = state.getAvailableTitles();
@@ -1384,7 +1470,8 @@ function setupTitleSelector() {
       playClickSound();
       state.setCustomTitle('');
       updateUI();
-      modal.style.display = 'none';
+      updatePreview();
+      renderTitleList();
     });
     list.appendChild(defaultItem);
 
@@ -1400,15 +1487,41 @@ function setupTitleSelector() {
         playClickSound();
         state.setCustomTitle(title);
         updateUI();
-        modal.style.display = 'none';
+        updatePreview();
+        renderTitleList();
       });
       list.appendChild(item);
     });
   };
 
+  // Bind change events to selects
+  if (el.titleDecoBgSelect) {
+    el.titleDecoBgSelect.addEventListener('change', (e) => {
+      state.applyItem('titleBg', e.target.value);
+      updatePreview();
+      updateUI();
+    });
+  }
+  if (el.titleDecoColorSelect) {
+    el.titleDecoColorSelect.addEventListener('change', (e) => {
+      state.applyItem('titleColor', e.target.value);
+      updatePreview();
+      updateUI();
+    });
+  }
+  if (el.titleDecoBorderSelect) {
+    el.titleDecoBorderSelect.addEventListener('change', (e) => {
+      state.applyItem('titleBorder', e.target.value);
+      updatePreview();
+      updateUI();
+    });
+  }
+
   const openModal = () => {
     playClickSound();
     renderTitleList();
+    populateDecoSelects();
+    updatePreview();
     modal.style.display = 'flex';
   };
 
@@ -1431,10 +1544,36 @@ function setupTitleSelector() {
 // shop (ニャルドショップ) Handler
 // --------------------------------------------------------------------------
 const SHOP_FRAMES = [
-  { id: 'wood', name: 'ナチュラルウッド', desc: '温かみのある本格的な木製枠', cost: 1500, emoji: '🪵' },
-  { id: 'paw', name: 'にゃんこ肉球', desc: '可愛い猫の足跡がいっぱいの枠', cost: 2000, emoji: '🐾' },
-  { id: 'sakura', name: 'サクラ舞うピンク', desc: 'ひらひらサクラが舞うお洒落な枠', cost: 3000, emoji: '🌸' },
-  { id: 'gold', name: 'ロイヤルゴールド', desc: 'キラキラ輝く豪華な黄金の枠', cost: 5000, emoji: '👑' }
+  { id: 'wood', name: 'ニャルドの温室木枠', desc: '温かみのある本格的な木製枠', cost: 1500, emoji: '🪵' },
+  { id: 'paw', name: 'ニャルドのぷにぷに肉球枠', desc: '可愛い猫の足跡がいっぱいの枠', cost: 2000, emoji: '🐾' },
+  { id: 'sakura', name: 'マタタビ桜の舞枠', desc: 'ひらひらサクラが舞うお洒落な枠', cost: 3000, emoji: '🌸' },
+  { id: 'gold', name: '黄金の猫じゃらし光彩枠', desc: 'キラキラ輝く豪華な黄金の枠', cost: 5000, emoji: '👑' }
+];
+
+const SHOP_TITLE_BGS = [
+  { id: 'bg-pink', name: '桃色肉球ピンク', cost: 800, emoji: '🩷' },
+  { id: 'bg-yellow', name: 'たんぽぽの綿毛ゴールド', cost: 800, emoji: '💛' },
+  { id: 'bg-blue', name: 'お散歩日和スカイ', cost: 800, emoji: '🩵' },
+  { id: 'bg-dark', name: 'クロネコの毛並みブラック', cost: 1200, emoji: '🖤' }
+];
+
+const SHOP_TITLE_COLORS = [
+  { id: 'color-red', name: 'ハエトリソウの罠レッド', cost: 500, emoji: '❤️' },
+  { id: 'color-purple', name: 'ラベンダーアロマパープル', cost: 500, emoji: '💜' },
+  { id: 'color-gold', name: '王様猫の瞳ゴールド', cost: 1000, emoji: '💛' }
+];
+
+const SHOP_TITLE_BORDERS = [
+  { id: 'border-dotted', name: 'コロコロどんぐりドット枠', cost: 600, emoji: '🔸' },
+  { id: 'border-double', name: 'キャットタワーダブルライン枠', cost: 800, emoji: '🔹' },
+  { id: 'border-rainbow', name: '七色マタタビレインボー光彩枠', cost: 1500, emoji: '🌈' }
+];
+
+const SHOP_THEMES = [
+  { id: 'default', name: '木漏れ日のキャットフォレスト', cost: 0, emoji: '🌲' },
+  { id: 'theme-sakura', name: '陽だまりのマタタビサクラ', cost: 2000, emoji: '🌸' },
+  { id: 'theme-night', name: 'クロネコの夜間散歩ブルー', cost: 2500, emoji: '🌌' },
+  { id: 'theme-sunset', name: '夕暮れのひだまりコタツオレンジ', cost: 2000, emoji: '🍊' }
 ];
 
 function setupShop() {
@@ -1443,33 +1582,56 @@ function setupShop() {
   const openBtn = el.openShopBtn;
   const pointsCount = el.shopPointsCount;
   const grid = el.shopItemsGrid;
+  const descText = el.shopDescText;
 
   if (!modal || !closeBtn || !grid) return;
+
+  let activeTab = 'frames'; // 'frames' | 'decos' | 'themes' | 'worldtree'
+
+  // Bind tab click events
+  const tabContainer = modal.querySelector('.shop-tabs');
+  if (tabContainer) {
+    const tabBtns = tabContainer.querySelectorAll('.shop-tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        playClickSound();
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = btn.getAttribute('data-tab');
+        renderShopItems();
+      });
+    });
+  }
 
   const renderShopItems = () => {
     grid.innerHTML = '';
     pointsCount.textContent = state.points;
 
-    SHOP_FRAMES.forEach(item => {
-      const isUnlocked = state.unlockedFrames.includes(item.id);
-      const canAfford = state.points >= item.cost;
-
+    // Helper to create basic item cards
+    const createItemCard = (item, isUnlocked, unlockAction, isApplied = false, applyAction = null) => {
       const card = document.createElement('div');
       card.className = 'shop-item-card' + (isUnlocked ? ' purchased' : '');
+      const canAfford = state.points >= item.cost;
 
       let actionHtml = '';
-      if (isUnlocked) {
-        actionHtml = `<button class="shop-buy-btn purchased" disabled>交換済み</button>`;
-      } else {
-        actionHtml = `<button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${item.id}">
+      if (!isUnlocked) {
+        actionHtml = `<button class="shop-buy-btn" ${canAfford ? '' : 'disabled'}>
           🪙 ${item.cost} pts
         </button>`;
+      } else if (applyAction) {
+        if (isApplied) {
+          actionHtml = `<button class="shop-buy-btn purchased" disabled>適用中</button>`;
+        } else {
+          actionHtml = `<button class="shop-buy-btn" style="background-color: var(--color-primary); color: #fff;">適用する</button>`;
+        }
+      } else {
+        actionHtml = `<button class="shop-buy-btn purchased" disabled>交換済み</button>`;
       }
 
       card.innerHTML = `
         <div class="shop-item-info">
-          <div class="shop-item-name">${item.emoji} ${item.name}</div>
-          <div class="shop-item-desc">${item.desc}</div>
+          <div class="shop-item-name">${item.emoji || '🎁'} ${item.name}</div>
+          ${item.desc ? `<div class="shop-item-desc">${item.desc}</div>` : ''}
         </div>
         <div class="shop-item-action">
           ${actionHtml}
@@ -1480,18 +1642,191 @@ function setupShop() {
         const btn = card.querySelector('.shop-buy-btn');
         btn.addEventListener('click', () => {
           playClickSound();
-          if (confirm(`【${item.name}】を ${item.cost} pts で交換するニャ？\n(消費しても研究レベルは下がりません)`)) {
+          unlockAction();
+        });
+      } else if (isUnlocked && applyAction && !isApplied) {
+        const btn = card.querySelector('.shop-buy-btn');
+        btn.addEventListener('click', () => {
+          playClickSound();
+          applyAction();
+        });
+      }
+      return card;
+    };
+
+    if (activeTab === 'frames') {
+      descText.innerHTML = `ポイントを消費して、図鑑の写真に飾れる可愛い「フォトフレーム」を交換できるニャ！<br>(※交換しても研究レベルは下がらないニャ！)`;
+      
+      SHOP_FRAMES.forEach(item => {
+        const isUnlocked = state.unlockedFrames.includes(item.id);
+        const card = createItemCard(item, isUnlocked, () => {
+          if (confirm(`【${item.name}】を ${item.cost} pts で交換するニャ？`)) {
             state.spendPoints(item.cost);
             state.unlockFrame(item.id);
-            alert(`🎉【${item.name}】のフォトフレームを解放したニャ！\n図鑑の詳細から写真に適用できるニャ！`);
+            alert(`🎉【${item.name}】を解放したニャ！\n図鑑の詳細画面から写真に適用できるニャ！`);
             renderShopItems();
             updateUI();
           }
         });
-      }
+        grid.appendChild(card);
+      });
 
-      grid.appendChild(card);
-    });
+    } else if (activeTab === 'decos') {
+      descText.innerHTML = `ポイントを消費して、称号の背景、文字色、枠線をデコレーションできるニャ！<br>交換後は称号の変更画面から設定できるニャ！`;
+      
+      // Category: Backgrounds
+      const bgHeader = document.createElement('h4');
+      bgHeader.style.cssText = 'font-size: 13px; color: var(--color-primary-dark); font-weight: 700; margin: 10px 0 5px 0; text-align: left; border-left: 3px solid var(--color-primary); padding-left: 6px;';
+      bgHeader.textContent = '🎨 称号の背景模様';
+      grid.appendChild(bgHeader);
+
+      SHOP_TITLE_BGS.forEach(item => {
+        const isUnlocked = state.unlockedTitleBgs.includes(item.id);
+        const card = createItemCard(item, isUnlocked, () => {
+          if (confirm(`【${item.name}】を ${item.cost} pts で交換するニャ？`)) {
+            state.unlockItem('titleBg', item.id, item.cost);
+            alert(`🎉【${item.name}】を解放したニャ！\n称号の変更モーダルから適用できるニャ！`);
+            renderShopItems();
+            updateUI();
+          }
+        });
+        grid.appendChild(card);
+      });
+
+      // Category: Colors
+      const colorHeader = document.createElement('h4');
+      colorHeader.style.cssText = 'font-size: 13px; color: var(--color-primary-dark); font-weight: 700; margin: 15px 0 5px 0; text-align: left; border-left: 3px solid var(--color-primary); padding-left: 6px;';
+      colorHeader.textContent = '✨ 称号の文字色';
+      grid.appendChild(colorHeader);
+
+      SHOP_TITLE_COLORS.forEach(item => {
+        const isUnlocked = state.unlockedTitleColors.includes(item.id);
+        const card = createItemCard(item, isUnlocked, () => {
+          if (confirm(`【${item.name}】を ${item.cost} pts で交換するニャ？`)) {
+            state.unlockItem('titleColor', item.id, item.cost);
+            alert(`🎉【${item.name}】を解放したニャ！\n称号の変更モーダルから適用できるニャ！`);
+            renderShopItems();
+            updateUI();
+          }
+        });
+        grid.appendChild(card);
+      });
+
+      // Category: Borders
+      const borderHeader = document.createElement('h4');
+      borderHeader.style.cssText = 'font-size: 13px; color: var(--color-primary-dark); font-weight: 700; margin: 15px 0 5px 0; text-align: left; border-left: 3px solid var(--color-primary); padding-left: 6px;';
+      borderHeader.textContent = '🔳 称号の枠線スタイル';
+      grid.appendChild(borderHeader);
+
+      SHOP_TITLE_BORDERS.forEach(item => {
+        const isUnlocked = state.unlockedTitleBorders.includes(item.id);
+        const card = createItemCard(item, isUnlocked, () => {
+          if (confirm(`【${item.name}】を ${item.cost} pts で交換するニャ？`)) {
+            state.unlockItem('titleBorder', item.id, item.cost);
+            alert(`🎉【${item.name}】を解放したニャ！\n称号の変更モーダルから適用できるニャ！`);
+            renderShopItems();
+            updateUI();
+          }
+        });
+        grid.appendChild(card);
+      });
+
+    } else if (activeTab === 'themes') {
+      descText.innerHTML = `ポイントを消費して、アプリ全体のカラーテーマを交換・適用できるニャ！`;
+      
+      SHOP_THEMES.forEach(item => {
+        const isUnlocked = state.unlockedThemes.includes(item.id) || item.cost === 0;
+        const isApplied = state.appliedTheme === item.id;
+        const card = createItemCard(item, isUnlocked, () => {
+          if (confirm(`【${item.name}】テーマを ${item.cost} pts で交換するニャ？`)) {
+            state.unlockItem('theme', item.id, item.cost);
+            alert(`🎉【${item.name}】テーマを解放したニャ！「適用する」ボタンを押すと切り替わるニャ！`);
+            renderShopItems();
+            updateUI();
+          }
+        }, isApplied, () => {
+          state.applyItem('theme', item.id);
+          applyAppTheme();
+          renderShopItems();
+          updateUI();
+        });
+        grid.appendChild(card);
+      });
+
+    } else if (activeTab === 'worldtree') {
+      descText.innerHTML = `ポイントを消費して、不思議な世界樹を育てることができる温室ニャ！<br>水やりや肥料を施して、世界樹をレベルアップさせるニャ！`;
+      
+      // Determine tree emoji based on level
+      let treeEmoji = '🌱';
+      let stageName = '双葉の芽';
+      const lvl = state.worldTreeLevel;
+      if (lvl >= 80) { treeEmoji = '🎄'; stageName = '奇跡 of 神木'; }
+      else if (lvl >= 40) { treeEmoji = '🌲'; stageName = 'そびえ立つ大樹'; }
+      else if (lvl >= 20) { treeEmoji = '🌳'; stageName = '立派な若木'; }
+      else if (lvl >= 10) { treeEmoji = '🪴'; stageName = '鉢植えの苗木'; }
+      else if (lvl >= 5) { treeEmoji = '🌿'; stageName = '小さな若葉'; }
+
+      const expPercentage = (state.worldTreeExp / (lvl * 100)) * 100;
+      
+      const wtHtml = `
+        <div class="worldtree-greenhouse">
+          <div class="wt-visual-container">
+            ${treeEmoji}
+          </div>
+          <div class="wt-stats">
+            <div class="wt-level-badge">🌳 不思議な世界樹 (Lv. ${lvl})</div>
+            <div style="font-size: 11px; color: var(--color-pink); font-weight: 700; margin-bottom: 4px;">現在の形態: 【${stageName}】</div>
+            <div class="wt-exp-bar-container">
+              <div class="wt-exp-bar-fill" style="width: ${expPercentage}%"></div>
+            </div>
+            <div class="wt-exp-info">
+              <span>EXP</span>
+              <span>${state.worldTreeExp} / ${lvl * 100}</span>
+            </div>
+          </div>
+          <div class="wt-actions">
+            <button class="wt-btn" id="wt-water-btn" ${state.points >= 100 ? '' : 'disabled'}>
+              💧 水やり
+              <span class="wt-btn-cost">🪙 100 pts (+10 EXP)</span>
+            </button>
+            <button class="wt-btn" id="wt-feed-btn" ${state.points >= 500 ? '' : 'disabled'}>
+              ✨ 高級肥料
+              <span class="wt-btn-cost">🪙 500 pts (+60 EXP)</span>
+            </button>
+          </div>
+        </div>
+      `;
+      
+      const wtWrapper = document.createElement('div');
+      wtWrapper.style.width = '100%';
+      wtWrapper.innerHTML = wtHtml;
+      grid.appendChild(wtWrapper);
+
+      // Bind greenhouse button clicks
+      const waterBtn = wtWrapper.querySelector('#wt-water-btn');
+      const feedBtn = wtWrapper.querySelector('#wt-feed-btn');
+
+      const triggerFeed = (type) => {
+        playClickSound();
+        const res = state.feedTree(type);
+        if (res.success) {
+          if (res.leveledUp) {
+            if (soundEnabled) audio.playLevelUp();
+            triggerConfetti();
+            alert(`🎉 世界樹がレベルアップしたニャ！\n🌳 Lv. ${res.newLevel - 1} ➔ Lv. ${res.newLevel} に成長したニャ！`);
+          } else {
+            if (soundEnabled) audio.playSuccess();
+          }
+          renderShopItems();
+          updateUI();
+        } else {
+          alert(res.reason);
+        }
+      };
+
+      if (waterBtn) waterBtn.addEventListener('click', () => triggerFeed('water'));
+      if (feedBtn) feedBtn.addEventListener('click', () => triggerFeed('fertilizer'));
+    }
   };
 
   if (openBtn) {

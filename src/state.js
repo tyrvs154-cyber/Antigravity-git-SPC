@@ -480,6 +480,18 @@ class AppState {
     this.longestStreak = 0;
     this.nonPlantScanCount = 0;
 
+    // Title decos, themes, and world tree parameters
+    this.unlockedTitleBgs = ['default'];
+    this.appliedTitleBg = '';
+    this.unlockedTitleColors = ['default'];
+    this.appliedTitleColor = '';
+    this.unlockedTitleBorders = ['default'];
+    this.appliedTitleBorder = '';
+    this.unlockedThemes = ['default'];
+    this.appliedTheme = 'default';
+    this.worldTreeLevel = 1;
+    this.worldTreeExp = 0;
+
     this.loadState();
   }
 
@@ -503,6 +515,18 @@ class AppState {
         this.currentStreak = parsed.currentStreak || 0;
         this.longestStreak = parsed.longestStreak || 0;
         this.nonPlantScanCount = parsed.nonPlantScanCount || 0;
+
+        // Load title decos, themes, and world tree parameters
+        this.unlockedTitleBgs = parsed.unlockedTitleBgs || ['default'];
+        this.appliedTitleBg = parsed.appliedTitleBg || '';
+        this.unlockedTitleColors = parsed.unlockedTitleColors || ['default'];
+        this.appliedTitleColor = parsed.appliedTitleColor || '';
+        this.unlockedTitleBorders = parsed.unlockedTitleBorders || ['default'];
+        this.appliedTitleBorder = parsed.appliedTitleBorder || '';
+        this.unlockedThemes = parsed.unlockedThemes || ['default'];
+        this.appliedTheme = parsed.appliedTheme || 'default';
+        this.worldTreeLevel = parsed.worldTreeLevel || 1;
+        this.worldTreeExp = parsed.worldTreeExp || 0;
       }
     } catch (e) {
       console.error('Failed to load state from localStorage:', e);
@@ -526,7 +550,19 @@ class AppState {
         lastScanDate: this.lastScanDate,
         currentStreak: this.currentStreak,
         longestStreak: this.longestStreak,
-        nonPlantScanCount: this.nonPlantScanCount
+        nonPlantScanCount: this.nonPlantScanCount,
+
+        // Save title decos, themes, and world tree parameters
+        unlockedTitleBgs: this.unlockedTitleBgs,
+        appliedTitleBg: this.appliedTitleBg,
+        unlockedTitleColors: this.unlockedTitleColors,
+        appliedTitleColor: this.appliedTitleColor,
+        unlockedTitleBorders: this.unlockedTitleBorders,
+        appliedTitleBorder: this.appliedTitleBorder,
+        unlockedThemes: this.unlockedThemes,
+        appliedTheme: this.appliedTheme,
+        worldTreeLevel: this.worldTreeLevel,
+        worldTreeExp: this.worldTreeExp
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
@@ -718,6 +754,61 @@ class AppState {
     return TITLES.slice(0, this.level);
   }
 
+  unlockItem(category, itemId, cost) {
+    if (this.points < cost) return false;
+    
+    let targetList;
+    if (category === 'titleBg') targetList = this.unlockedTitleBgs;
+    else if (category === 'titleColor') targetList = this.unlockedTitleColors;
+    else if (category === 'titleBorder') targetList = this.unlockedTitleBorders;
+    else if (category === 'theme') targetList = this.unlockedThemes;
+    
+    if (targetList && !targetList.includes(itemId)) {
+      this.points -= cost;
+      targetList.push(itemId);
+      this.saveState();
+      return true;
+    }
+    return false;
+  }
+
+  applyItem(category, itemId) {
+    if (category === 'titleBg') this.appliedTitleBg = itemId;
+    else if (category === 'titleColor') this.appliedTitleColor = itemId;
+    else if (category === 'titleBorder') this.appliedTitleBorder = itemId;
+    else if (category === 'theme') this.appliedTheme = itemId;
+    this.saveState();
+  }
+
+  feedTree(type) {
+    const cost = type === 'water' ? 100 : 500;
+    const expGain = type === 'water' ? 10 : 60;
+
+    if (this.points < cost) return { success: false, reason: 'ポイントが足りないニャ！' };
+
+    this.points -= cost;
+    this.worldTreeExp += expGain;
+
+    let leveledUp = false;
+    // Infinite leveling logic. Level L requires L * 100 EXP to level up
+    while (this.worldTreeExp >= this.worldTreeLevel * 100) {
+      this.worldTreeExp -= this.worldTreeLevel * 100;
+      this.worldTreeLevel++;
+      leveledUp = true;
+    }
+
+    this.saveState();
+    return {
+      success: true,
+      leveledUp,
+      newLevel: this.worldTreeLevel,
+      currentExp: this.worldTreeExp,
+      nextLevelExp: this.worldTreeLevel * 100,
+      pointsSpent: cost,
+      expGained: expGain
+    };
+  }
+
   resetAll() {
     this.points = 0;
     this.level = 1;
@@ -731,6 +822,16 @@ class AppState {
     this.currentStreak = 0;
     this.longestStreak = 0;
     this.nonPlantScanCount = 0;
+    this.unlockedTitleBgs = ['default'];
+    this.appliedTitleBg = '';
+    this.unlockedTitleColors = ['default'];
+    this.appliedTitleColor = '';
+    this.unlockedTitleBorders = ['default'];
+    this.appliedTitleBorder = '';
+    this.unlockedThemes = ['default'];
+    this.appliedTheme = 'default';
+    this.worldTreeLevel = 1;
+    this.worldTreeExp = 0;
     this.saveState();
   }
 }

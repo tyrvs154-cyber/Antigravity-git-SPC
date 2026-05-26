@@ -664,15 +664,43 @@
 
   <!-- TITLE SELECT MODAL -->
   <div class="settings-backdrop" id="title-select-modal-backdrop" style="display: none; z-index: 300;">
-    <div class="settings-modal" style="max-height: 70%; width: 90%; max-width: 380px;">
+    <div class="settings-modal" style="max-height: 85%; width: 90%; max-width: 380px;">
       <div class="settings-header">
         <h3>🎓 称号の変更</h3>
         <button class="settings-close-btn" id="title-select-modal-close-btn">✕</button>
       </div>
-      <div class="settings-scroll-content" style="padding: 20px;">
-        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 15px; line-height: 1.5; text-align: center;">これまでに到達したレベルでアンロックされた称号から、好きなものを設定できるニャ！</p>
-        <div class="title-select-list" id="title-select-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
+      <div class="settings-scroll-content" style="padding: 15px;">
+        <!-- Preview Box -->
+        <div class="title-preview-box" style="background-color: var(--color-bg-warm); padding: 15px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); text-align: center; margin-bottom: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+          <span style="font-size: 11px; color: var(--color-text-muted);">🌟 適用中のプレビュー:</span>
+          <div class="title-val" id="title-preview-display" style="font-size: 15px; display: inline-block;">たまご学者</div>
+        </div>
+
+        <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; line-height: 1.5; text-align: center;">これまでに到達したレベルでアンロックされた称号から、好きなものを設定できるニャ！</p>
+        <div class="title-select-list" id="title-select-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; padding-right: 5px; margin-bottom: 15px; border-bottom: 1.5px solid var(--color-border); padding-bottom: 10px;">
           <!-- Dynamically populated -->
+        </div>
+
+        <!-- Deco Customization Section -->
+        <div class="title-deco-section" style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
+          <h4 style="font-size: 13px; color: var(--color-primary-dark); font-weight: 700; border-left: 3px solid var(--color-primary); padding-left: 6px;">📛 称号のデコレーション</h4>
+          
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">背景の模様:</label>
+            <select id="title-deco-bg-select" class="sort-select" style="width: 100%; height: 36px; padding: 0 8px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); font-size: 12px; color: var(--color-text-dark); background-color: var(--color-card-white);">
+              <option value="">なし (デフォルト)</option>
+            </select>
+
+            <label style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">文字の色:</label>
+            <select id="title-deco-color-select" class="sort-select" style="width: 100%; height: 36px; padding: 0 8px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); font-size: 12px; color: var(--color-text-dark); background-color: var(--color-card-white);">
+              <option value="">なし (デフォルト)</option>
+            </select>
+
+            <label style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">枠線の種類:</label>
+            <select id="title-deco-border-select" class="sort-select" style="width: 100%; height: 36px; padding: 0 8px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); font-size: 12px; color: var(--color-text-dark); background-color: var(--color-card-white);">
+              <option value="">なし (デフォルト)</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -680,13 +708,13 @@
 
   <!-- NYAN SHOP MODAL -->
   <div class="settings-backdrop" id="shop-modal-backdrop" style="display: none; z-index: 300;">
-    <div class="settings-modal" style="max-height: 80%; width: 90%; max-width: 400px;">
+    <div class="settings-modal" style="max-height: 85%; width: 90%; max-width: 400px;">
       <div class="settings-header">
         <h3>🛍️ ニャルドショップ</h3>
         <button class="settings-close-btn" id="shop-modal-close-btn">✕</button>
       </div>
       <div class="settings-scroll-content" style="padding: 15px;">
-        <div class="shop-points-banner" style="background-color: var(--color-primary-light); padding: 12px; border-radius: var(--border-radius-sm); display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1.5px solid var(--color-primary); width: 100%;">
+        <div class="shop-points-banner" style="background-color: var(--color-primary-light); padding: 12px; border-radius: var(--border-radius-sm); display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1.5px solid var(--color-primary); width: 100%;">
           <span style="font-size: 13px; font-weight: 700; color: var(--color-primary-dark);">現在の所持ポイント:</span>
           <div class="point-badge" style="box-shadow: none; padding: 2.5px 10px; display: flex; align-items: center; gap: 6px;">
             <span class="coin-icon">🪙</span>
@@ -694,8 +722,17 @@
             <span class="point-unit">pts</span>
           </div>
         </div>
-        <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 15px; text-align: center; line-height: 1.4;">ポイントを消費して、図鑑の写真に飾れる可愛い「フォトフレーム」を交換できるニャ！<br>(※交換しても研究レベルは下がらないニャ！)</p>
-        <div class="shop-items-grid" id="shop-items-grid" style="display: flex; flex-direction: column; gap: 12px;">
+
+        <!-- Shop Categories Tab Bar -->
+        <div class="shop-tabs" style="display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid var(--color-border); padding-bottom: 6px; width: 100%;">
+          <button class="shop-tab-btn active" data-tab="frames" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">🖼️ 枠</button>
+          <button class="shop-tab-btn" data-tab="decos" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">📛 称号</button>
+          <button class="shop-tab-btn" data-tab="themes" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">🎨 テーマ</button>
+          <button class="shop-tab-btn" data-tab="worldtree" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">🌳 温室</button>
+        </div>
+
+        <p id="shop-desc-text" style="font-size: 11.5px; color: var(--color-text-muted); margin-bottom: 12px; text-align: center; line-height: 1.4;">ポイントを消費して、図鑑の写真に飾れる可愛い「フォトフレーム」を交換できるニャ！<br>(※交換しても研究レベルは下がらないニャ！)</p>
+        <div class="shop-items-grid" id="shop-items-grid" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
           <!-- Dynamically populated -->
         </div>
       </div>
