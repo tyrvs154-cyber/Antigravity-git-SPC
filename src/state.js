@@ -1,4 +1,46 @@
 // Hanamikke App State Management
+import { FALLBACK_PLANTS } from './plantsData.js';
+
+export const GREENHOUSE_CONFIG = {
+  slotUnlockCosts: {
+    4: 1500,
+    5: 3000,
+    6: 5000
+  },
+  fertilizerCost: 200,
+  fertilizerSkipMs: 3 * 60 * 1000, // 3分スキップ
+  cleanupBonusMin: 50,
+  cleanupBonusMax: 150,
+  eventProbabilityPerSec: 0.003,
+
+  rarityGrowTimes: {
+    'Common': 2 * 60 * 1000,     // 2分
+    'Uncommon': 5 * 60 * 1000,   // 5分
+    'Rare': 10 * 60 * 1000,      // 10分
+    'Legendary': 15 * 60 * 1000  // 15分
+  },
+
+  rarityPointRates: {
+    'Common': { ratePerMin: 10, max: 100 },
+    'Uncommon': { ratePerMin: 25, max: 250 },
+    'Rare': { ratePerMin: 50, max: 500 },
+    'Legendary': { ratePerMin: 100, max: 1000 }
+  },
+
+  hybridGrowTime: 8 * 60 * 1000, // 8分
+  hybridPointRate: 60,          // 毎分60pts
+  hybridMaxPoints: 600,         // 最大600pts
+  
+  categoryEmojis: {
+    'flowers': '🌸',
+    'herbs': '🌿',
+    'trees': '🌳',
+    'succulents': '🌵',
+    'ferns': '🌿',
+    'mosses': '🌱',
+    'default': '🌱'
+  }
+};
 
 const STORAGE_KEY = 'hanamikke_state_v1';
 
@@ -490,6 +532,29 @@ class AppState {
     this.worldTreeLevel = 1;
     this.worldTreeExp = 0;
 
+    // Greenhouse Lab parameters
+    this.ghSlotCount = 3;
+    this.ghSlots = Array.from({ length: 6 }, (_, i) => ({
+      slotId: i + 1,
+      plantId: null,
+      status: 'empty',
+      plantedTime: null,
+      currentStage: 0,
+      lastUpdated: null,
+      accumulatedPoints: 0,
+      isInfested: false,
+      isWeedy: false,
+      speedMultiplier: 1.0,
+      speedMultiplierUntil: null
+    }));
+    this.ghSeeds = {
+      'セイヨウタンポポ': 2,
+      'シロツメクサ（クローバー）': 2
+    };
+    this.ghRecords = {};
+    this.ghActiveTheme = 'default';
+    this.ghActivePot = 'default';
+
     this.loadState();
   }
 
@@ -525,6 +590,34 @@ class AppState {
         this.appliedTheme = parsed.appliedTheme || 'default';
         this.worldTreeLevel = parsed.worldTreeLevel || 1;
         this.worldTreeExp = parsed.worldTreeExp || 0;
+
+        // Load greenhouse parameters
+        this.ghSlotCount = parsed.ghSlotCount || 3;
+        this.ghSeeds = parsed.ghSeeds || {
+          'セイヨウタンポポ': 2,
+          'シロツメクサ（クローバー）': 2
+        };
+        this.ghRecords = parsed.ghRecords || {};
+        this.ghActiveTheme = parsed.ghActiveTheme || 'default';
+        this.ghActivePot = parsed.ghActivePot || 'default';
+
+        if (parsed.ghSlots) {
+          this.ghSlots = parsed.ghSlots;
+        } else {
+          this.ghSlots = Array.from({ length: 6 }, (_, i) => ({
+            slotId: i + 1,
+            plantId: null,
+            status: 'empty',
+            plantedTime: null,
+            currentStage: 0,
+            lastUpdated: null,
+            accumulatedPoints: 0,
+            isInfested: false,
+            isWeedy: false,
+            speedMultiplier: 1.0,
+            speedMultiplierUntil: null
+          }));
+        }
       }
     } catch (e) {
       console.error('Failed to load state from localStorage:', e);
@@ -560,7 +653,15 @@ class AppState {
         unlockedThemes: this.unlockedThemes,
         appliedTheme: this.appliedTheme,
         worldTreeLevel: this.worldTreeLevel,
-        worldTreeExp: this.worldTreeExp
+        worldTreeExp: this.worldTreeExp,
+
+        // Save greenhouse parameters
+        ghSlotCount: this.ghSlotCount,
+        ghSlots: this.ghSlots,
+        ghSeeds: this.ghSeeds,
+        ghRecords: this.ghRecords,
+        ghActiveTheme: this.ghActiveTheme,
+        ghActivePot: this.ghActivePot
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
@@ -666,6 +767,12 @@ class AppState {
     
     // Check for badge unlocks
     const unlockedBadges = this.checkBadgeUnlocks();
+    
+    // スキャンした植物の種を1個獲得
+    const plantName = plantData.name;
+    if (plantName) {
+      this.ghSeeds[plantName] = (this.ghSeeds[plantName] || 0) + 1;
+    }
     
     this.saveState();
     
@@ -812,7 +919,7 @@ class AppState {
     this.level = 1;
     this.collected = [];
     this.badges = [];
-    this.geminiModel = 'gemini-2.5-flash';
+    this.geminiModel = 'gemini-3.1-flash-lite';
     this.logoIcon = '🌸';
     this.customTitle = '';
     this.unlockedFrames = ['none'];
@@ -830,6 +937,342 @@ class AppState {
     this.appliedTheme = 'default';
     this.worldTreeLevel = 1;
     this.worldTreeExp = 0;
+
+    // Greenhouse Lab
+    this.ghSlotCount = 3;
+    this.ghSlots = Array.from({ length: 6 }, (_, i) => ({
+      slotId: i + 1,
+      plantId: null,
+      status: 'empty',
+      plantedTime: null,
+      currentStage: 0,
+      lastUpdated: null,
+      accumulatedPoints: 0,
+      isInfested: false,
+      isWeedy: false,
+      speedMultiplier: 1.0,
+      speedMultiplierUntil: null
+    }));
+    this.ghSeeds = {
+      'セイヨウタンポポ': 2,
+      'シロツメクサ（クローバー）': 2
+    };
+    this.ghRecords = {};
+    this.ghActiveTheme = 'default';
+    this.ghActivePot = 'default';
+
+    this.saveState();
+  }
+
+  getPlantSpec(plantId) {
+    if (!plantId) return null;
+
+    // 交配種の場合
+    if (plantId.startsWith('hybrid_')) {
+      const record = this.ghRecords[plantId];
+      if (record) {
+        return {
+          id: plantId,
+          name: record.name,
+          emoji: record.emoji || '💮',
+          description: record.description,
+          rarity: 'Legendary',
+          growTimeMs: GREENHOUSE_CONFIG.hybridGrowTime,
+          pointRatePerMin: GREENHOUSE_CONFIG.hybridPointRate,
+          maxPoints: GREENHOUSE_CONFIG.hybridMaxPoints,
+          isHybrid: true,
+          parents: record.parents
+        };
+      }
+    }
+
+    // 通常種（図鑑またはデフォルトリストから探す）
+    let matched = FALLBACK_PLANTS.find(p => p.name === plantId);
+    if (!matched) {
+      matched = this.collected.find(p => p.name === plantId);
+    }
+
+    const rarity = matched ? matched.rarity : 'Common';
+    const category = matched ? matched.category : 'default';
+    const emoji = matched ? (matched.emoji || GREENHOUSE_CONFIG.categoryEmojis[category] || '🌱') : '🌱';
+
+    const growTimeMs = GREENHOUSE_CONFIG.rarityGrowTimes[rarity] || GREENHOUSE_CONFIG.rarityGrowTimes['Common'];
+    const pRate = GREENHOUSE_CONFIG.rarityPointRates[rarity] || GREENHOUSE_CONFIG.rarityPointRates['Common'];
+
+    return {
+      id: plantId,
+      name: plantId,
+      emoji: emoji,
+      description: matched ? matched.description : '不思議な植物ニャ。',
+      rarity: rarity,
+      growTimeMs: growTimeMs,
+      pointRatePerMin: pRate.ratePerMin,
+      maxPoints: pRate.max,
+      isHybrid: false
+    };
+  }
+
+  plantSeed(slotId, plantId) {
+    const slot = this.ghSlots.find(s => s.slotId === slotId);
+    if (!slot || slotId > this.ghSlotCount) return { success: false, reason: 'スロットが無効ニャ！' };
+    if (slot.status !== 'empty') return { success: false, reason: 'すでに植物が植えられているニャ！' };
+    if (!this.ghSeeds[plantId] || this.ghSeeds[plantId] <= 0) return { success: false, reason: '種を持っていないニャ！' };
+
+    this.ghSeeds[plantId]--;
+    slot.plantId = plantId;
+    slot.status = 'growing';
+    slot.plantedTime = Date.now();
+    slot.currentStage = 0;
+    slot.lastUpdated = Date.now();
+    slot.accumulatedPoints = 0;
+    slot.isInfested = false;
+    slot.isWeedy = false;
+    slot.speedMultiplier = 1.0;
+    slot.speedMultiplierUntil = null;
+
+    this.saveState();
+    return { success: true };
+  }
+
+  applyFertilizer(slotId) {
+    const slot = this.ghSlots.find(s => s.slotId === slotId);
+    if (!slot || slot.status !== 'growing') return { success: false, reason: '成長中の植物がないニャ！' };
+    
+    const cost = GREENHOUSE_CONFIG.fertilizerCost;
+    if (this.points < cost) return { success: false, reason: 'ポイントが足りないニャ！' };
+
+    this.points -= cost;
+    
+    const spec = this.getPlantSpec(slot.plantId);
+    if (spec) {
+      slot.plantedTime -= GREENHOUSE_CONFIG.fertilizerSkipMs;
+      slot.lastUpdated = Date.now();
+      this.updateSingleSlot(slot, spec, Date.now());
+    }
+
+    this.saveState();
+    return { success: true, pointsLeft: this.points };
+  }
+
+  harvestSlot(slotId) {
+    const slot = this.ghSlots.find(s => s.slotId === slotId);
+    if (!slot || slot.status !== 'mature') return { success: false, reason: '収穫できる植物がないニャ！' };
+
+    const pts = Math.floor(slot.accumulatedPoints);
+    this.points += pts;
+    
+    slot.plantId = null;
+    slot.status = 'empty';
+    slot.plantedTime = null;
+    slot.currentStage = 0;
+    slot.lastUpdated = null;
+    slot.accumulatedPoints = 0;
+    slot.isInfested = false;
+    slot.isWeedy = false;
+
+    this.saveState();
+    return { success: true, harvestedPoints: pts, pointsTotal: this.points };
+  }
+
+  harvestAllSlots() {
+    let totalHarvested = 0;
+    this.ghSlots.forEach(slot => {
+      if (slot.status === 'mature' && slot.slotId <= this.ghSlotCount) {
+        totalHarvested += Math.floor(slot.accumulatedPoints);
+        slot.plantId = null;
+        slot.status = 'empty';
+        slot.plantedTime = null;
+        slot.currentStage = 0;
+        slot.lastUpdated = null;
+        slot.accumulatedPoints = 0;
+        slot.isInfested = false;
+        slot.isWeedy = false;
+      }
+    });
+
+    if (totalHarvested > 0) {
+      this.points += totalHarvested;
+      this.saveState();
+      return { success: true, harvestedPoints: totalHarvested, pointsTotal: this.points };
+    }
+    return { success: false, reason: '収穫可能な植物がないニャ！' };
+  }
+
+  unlockSlot() {
+    const nextSlot = this.ghSlotCount + 1;
+    if (nextSlot > 6) return { success: false, reason: 'これ以上スロットを増やせないニャ！' };
+
+    const cost = GREENHOUSE_CONFIG.slotUnlockCosts[nextSlot];
+    if (this.points < cost) return { success: false, reason: `ポイントが足りないニャ！(必要: ${cost} pts)` };
+
+    this.points -= cost;
+    this.ghSlotCount = nextSlot;
+    this.saveState();
+
+    return { success: true, newSlotCount: this.ghSlotCount, pointsLeft: this.points };
+  }
+
+  cleanupInfestation(slotId, type) {
+    const slot = this.ghSlots.find(s => s.slotId === slotId);
+    if (!slot) return { success: false };
+
+    let cleaned = false;
+    if (type === 'pest' && slot.isInfested) {
+      slot.isInfested = false;
+      cleaned = true;
+    } else if (type === 'weed' && slot.isWeedy) {
+      slot.isWeedy = false;
+      cleaned = true;
+    }
+
+    if (cleaned) {
+      const bonus = Math.floor(Math.random() * (GREENHOUSE_CONFIG.cleanupBonusMax - GREENHOUSE_CONFIG.cleanupBonusMin + 1)) + GREENHOUSE_CONFIG.cleanupBonusMin;
+      this.points += bonus;
+      this.saveState();
+      return { success: true, bonusPoints: bonus, pointsTotal: this.points };
+    }
+    return { success: false };
+  }
+
+  breedPlants(slotId1, slotId2, newPlantData) {
+    const slot1 = this.ghSlots.find(s => s.slotId === slotId1);
+    const slot2 = this.ghSlots.find(s => s.slotId === slotId2);
+
+    if (!slot1 || slot1.status !== 'mature' || !slot2 || slot2.status !== 'mature') {
+      return { success: false, reason: '交配するには2つの成熟した植物が必要ニャ！' };
+    }
+
+    const parent1 = slot1.plantId;
+    const parent2 = slot2.plantId;
+
+    const hybridId = 'hybrid_' + Date.now();
+    const newHybrid = {
+      id: hybridId,
+      name: newPlantData.name,
+      emoji: newPlantData.emoji || '💮',
+      description: newPlantData.description,
+      parents: [parent1, parent2],
+      discoveredAt: new Date().toISOString()
+    };
+
+    this.ghRecords[hybridId] = newHybrid;
+
+    slot1.plantId = null;
+    slot1.status = 'empty';
+    slot1.plantedTime = null;
+    slot1.currentStage = 0;
+    slot1.lastUpdated = null;
+    slot1.accumulatedPoints = 0;
+    slot1.isInfested = false;
+    slot1.isWeedy = false;
+
+    slot2.plantId = null;
+    slot2.status = 'empty';
+    slot2.plantedTime = null;
+    slot2.currentStage = 0;
+    slot2.lastUpdated = null;
+    slot2.accumulatedPoints = 0;
+    slot2.isInfested = false;
+    slot2.isWeedy = false;
+
+    this.ghSeeds[hybridId] = (this.ghSeeds[hybridId] || 0) + 1;
+
+    this.saveState();
+    return { success: true, hybridId, newHybrid };
+  }
+
+  updateGreenhouseState() {
+    const now = Date.now();
+    this.ghSlots.forEach(slot => {
+      if (slot.slotId > this.ghSlotCount) return;
+      if (slot.status === 'empty') return;
+
+      const spec = this.getPlantSpec(slot.plantId);
+      if (!spec) return;
+
+      this.updateSingleSlot(slot, spec, now);
+
+      if (!slot.isInfested && !slot.isWeedy && (slot.status === 'growing' || slot.status === 'mature')) {
+        if (Math.random() < GREENHOUSE_CONFIG.eventProbabilityPerSec) {
+          if (Math.random() < 0.5) {
+            slot.isInfested = true;
+          } else {
+            slot.isWeedy = true;
+          }
+        }
+      }
+    });
+  }
+
+  updateSingleSlot(slot, spec, now) {
+    if (slot.status === 'growing') {
+      const elapsed = now - slot.plantedTime;
+      const progress = Math.min(100, (elapsed / spec.growTimeMs) * 100);
+      slot.growthProgress = progress;
+
+      if (progress >= 100) {
+        slot.status = 'mature';
+        slot.currentStage = 4;
+        slot.growthProgress = 100;
+      } else {
+        slot.currentStage = Math.floor(progress / 25);
+      }
+    }
+
+    if (slot.status === 'mature') {
+      const elapsedSec = (now - slot.lastUpdated) / 1000;
+      if (!slot.isInfested && !slot.isWeedy && elapsedSec > 0) {
+        const ratePerSec = (spec.pointRatePerMin / 60);
+        let multiplier = 1.0;
+        if (slot.speedMultiplierUntil && now < slot.speedMultiplierUntil) {
+          multiplier = slot.speedMultiplier;
+        } else {
+          slot.speedMultiplier = 1.0;
+          slot.speedMultiplierUntil = null;
+        }
+
+        const gained = elapsedSec * ratePerSec * multiplier;
+        slot.accumulatedPoints = Math.min(spec.maxPoints, slot.accumulatedPoints + gained);
+      }
+    }
+
+    slot.lastUpdated = now;
+  }
+
+  updateGreenhouseOffline(seconds) {
+    const now = Date.now();
+    const elapsedMs = seconds * 1000;
+
+    this.ghSlots.forEach(slot => {
+      if (slot.slotId > this.ghSlotCount) return;
+      if (slot.status === 'empty') return;
+
+      const spec = this.getPlantSpec(slot.plantId);
+      if (!spec) return;
+
+      if (slot.status === 'growing') {
+        const futurePlantedTime = slot.plantedTime - elapsedMs;
+        const totalElapsed = now - futurePlantedTime;
+        if (totalElapsed >= spec.growTimeMs) {
+          slot.status = 'mature';
+          slot.currentStage = 4;
+          slot.growthProgress = 100;
+          const matureDurationSec = (totalElapsed - spec.growTimeMs) / 1000;
+          const ratePerSec = (spec.pointRatePerMin / 60);
+          slot.accumulatedPoints = Math.min(spec.maxPoints, matureDurationSec * ratePerSec);
+        } else {
+          slot.growthProgress = (totalElapsed / spec.growTimeMs) * 100;
+          slot.currentStage = Math.floor(slot.growthProgress / 25);
+        }
+      } else if (slot.status === 'mature') {
+        const ratePerSec = (spec.pointRatePerMin / 60);
+        const gained = (elapsedMs / 1000) * ratePerSec;
+        slot.accumulatedPoints = Math.min(spec.maxPoints, slot.accumulatedPoints + gained);
+      }
+
+      slot.lastUpdated = now;
+    });
+
     this.saveState();
   }
 }

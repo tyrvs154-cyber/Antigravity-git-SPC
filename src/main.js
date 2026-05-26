@@ -1,15 +1,17 @@
 // Hanamikke App Main Control Logic
 
-import { state, getBadgeDefinitions } from './state.js';
+import { state, getBadgeDefinitions, GREENHOUSE_CONFIG } from './state.js';
 import { FALLBACK_PLANTS, getRandomFallback, findFallbackByName } from './plantsData.js';
 import { audio } from './audio.js';
-import { analyzePlantImage } from './gemini.js';
+import { analyzePlantImage, generateHybridPlant } from './gemini.js';
 import { camera } from './camera.js';
 import { AdMob, RewardAdPluginEvents } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
 // Sound enabled global setting
 let soundEnabled = true;
+let greenhouseTimer = null;
+let selectedBreedSlots = []; // 交配選択中スロットIDのリスト (最大2)
 
 // DOM Elements
 const el = {
@@ -294,8 +296,17 @@ function setupNav() {
         renderBadgesGrid();
       }
 
+      if (greenhouseTimer) {
+        clearInterval(greenhouseTimer);
+        greenhouseTimer = null;
+      }
+
       if (targetScreen === 'greenhouse') {
         renderGreenhouse();
+        greenhouseTimer = setInterval(() => {
+          state.updateGreenhouseState();
+          renderGreenhouseRealtimeOnly();
+        }, 1000);
       }
     });
   });
@@ -1936,74 +1947,653 @@ function setupLightbox() {
 }
 
 // --------------------------------------------------------------------------
-// Greenhouse (温室世界樹) Screen handlers
+// Greenhouse (温室ラボ) Screen handlers & Rendering
 // --------------------------------------------------------------------------
 function setupGreenhouse() {
-  const waterBtn = document.getElementById('gh-water-btn');
-  const feedBtn = document.getElementById('gh-feed-btn');
+  const openRecordsBtn = document.getElementById('gh-open-records-btn');
+  const closeRecordsBtn = document.getElementById('gh-close-records-btn');
+  const harvestAllBtn = document.getElementById('gh-harvest-all-btn');
+  const themeSelect = document.getElementById('gh-theme-select');
+  const potSelect = document.getElementById('gh-pot-select');
+  const closePlantModalBtn = document.getElementById('gh-close-plant-modal-btn');
+  const breedExecuteBtn = document.getElementById('gh-breed-execute-btn');
+  const breedResultCloseBtn = document.getElementById('gh-breed-result-close-btn');
 
-  const triggerFeed = (type) => {
-    playClickSound();
-    const res = state.feedTree(type);
-    if (res.success) {
-      if (res.leveledUp) {
-        if (soundEnabled) audio.playLevelUp();
-        triggerConfetti();
-        alert(`🎉 世界樹がレベルアップしたニャ！\n🌳 Lv. ${res.newLevel - 1} ➔ Lv. ${res.newLevel} に成長したニャ！`);
-      } else {
-        if (soundEnabled) audio.playSuccess();
-      }
-      renderGreenhouse();
-      updateUI();
-    } else {
-      alert(res.reason);
-    }
-  };
-
-  if (waterBtn) {
-    waterBtn.addEventListener('click', () => triggerFeed('water'));
+  // 1. 栽培記録モーダル
+  if (openRecordsBtn) {
+    openRecordsBtn.addEventListener('click', () => {
+      playClickSound();
+      renderCultivationRecords();
+      document.getElementById('gh-records-modal').style.display = 'flex';
+    });
   }
-  if (feedBtn) {
-    feedBtn.addEventListener('click', () => triggerFeed('fertilizer'));
+  if (closeRecordsBtn) {
+    closeRecordsBtn.addEventListener('click', () => {
+      playClickSound();
+      document.getElementById('gh-records-modal').style.display = 'none';
+    });
+  }
+
+  // 2. 種まきモーダル閉じる
+  if (closePlantModalBtn) {
+    closePlantModalBtn.addEventListener('click', () => {
+      playClickSound();
+      document.getElementById('gh-plant-seed-modal').style.display = 'none';
+    });
+  }
+
+  // 3. 一括回収
+  if (harvestAllBtn) {
+    harvestAllBtn.addEventListener('click', () => {
+      playClickSound();
+      const matureSlots = state.ghSlots.filter(s => s.status === 'mature' && s.slotId <= state.ghSlotCount);
+      if (matureSlots.length === 0) {
+        alert('⚠️ 収穫可能な植物がないニャ！');
+        return;
+      }
+
+      matureSlots.forEach(s => {
+        const slotEl = document.querySelector(`.gh-slot[data-slot-id="${s.slotId}"]`);
+        if (slotEl) {
+          triggerPointsFloatEffect(slotEl, Math.floor(s.accumulatedPoints));
+        }
+      });
+
+      const res = state.harvestAllSlots();
+      if (res.success) {
+        if (soundEnabled) audio.playSuccess();
+        updateUI();
+        renderGreenhouse();
+      }
+    });
+  }
+
+  // 4. カスタマイズ変更イベント
+  if (themeSelect) {
+    themeSelect.addEventListener('change', (e) => {
+      playClickSound();
+      state.ghActiveTheme = e.target.value;
+      state.saveState();
+      applyGreenhouseThemeClass();
+    });
+  }
+  if (potSelect) {
+    potSelect.addEventListener('change', (e) => {
+      playClickSound();
+      state.ghActivePot = e.target.value;
+      state.saveState();
+      renderGreenhouse();
+    });
+  }
+
+  // 5. 交配実行
+  if (breedExecuteBtn) {
+    breedExecuteBtn.addEventListener('click', async () => {
+      playClickSound();
+      if (selectedBreedSlots.length !== 2) return;
+
+      const slotId1 = selectedBreedSlots[0];
+      const slotId2 = selectedBreedSlots[1];
+
+      const slot1 = state.ghSlots.find(s => s.slotId === slotId1);
+      const slot2 = state.ghSlots.find(s => s.slotId === slotId2);
+
+      if (!slot1 || !slot2) return;
+
+      const specA = state.getPlantSpec(slot1.plantId);
+      const specB = state.getPlantSpec(slot2.plantId);
+
+      if (!specA || !specB) return;
+
+      breedExecuteBtn.disabled = true;
+      breedExecuteBtn.textContent = '🧪 交配中ニャ...';
+
+      try {
+        const hybridData = await generateHybridPlant(specA, specB, state.geminiKey, state.geminiModel);
+        
+        const res = state.breedPlants(slotId1, slotId2, hybridData);
+        if (res.success) {
+          if (soundEnabled) audio.playLevelUp();
+          triggerConfetti();
+
+          document.getElementById('gh-breed-result-emoji').textContent = res.newHybrid.emoji || '💮';
+          document.getElementById('gh-breed-result-name').textContent = res.newHybrid.name;
+          document.getElementById('gh-breed-result-desc').textContent = `ニャルド博士のメモ: ${res.newHybrid.description}`;
+          
+          document.getElementById('gh-breed-result-modal').style.display = 'flex';
+          
+          selectedBreedSlots = [];
+          updateUI();
+          renderGreenhouse();
+        } else {
+          alert('交配に失敗したニャ: ' + res.reason);
+        }
+      } catch (err) {
+        console.error('Breeding failed:', err);
+        alert('⚠️ 交配中にエラーが発生したニャ。インターネット接続とAPIキーの設定を確認してくださいニャ！\nエラー内容: ' + err.message);
+      } finally {
+        breedExecuteBtn.disabled = false;
+        breedExecuteBtn.textContent = '🧪 交配を実行する（2つ消費）';
+      }
+    });
+  }
+
+  // 6. 誕生モーダル閉じる
+  if (breedResultCloseBtn) {
+    breedResultCloseBtn.addEventListener('click', () => {
+      playClickSound();
+      document.getElementById('gh-breed-result-modal').style.display = 'none';
+      renderGreenhouse();
+    });
+  }
+
+  applyGreenhouseThemeClass();
+}
+
+function applyGreenhouseThemeClass() {
+  const ghScreen = document.getElementById('screen-greenhouse');
+  const themeSelect = document.getElementById('gh-theme-select');
+  if (!ghScreen) return;
+
+  const activeTheme = state.ghActiveTheme || 'default';
+  
+  if (themeSelect) themeSelect.value = activeTheme;
+
+  ghScreen.className = 'app-screen';
+  ghScreen.classList.add(`theme-gh-${activeTheme}`);
+}
+
+function triggerPointsFloatEffect(element, points) {
+  if (!element || points <= 0) return;
+  const floatEl = document.createElement('div');
+  floatEl.className = 'gh-float-points';
+  floatEl.textContent = `+${points} pts`;
+  floatEl.style.left = '50%';
+  floatEl.style.top = '20%';
+  floatEl.style.transform = 'translate(-50%, -50%)';
+
+  element.appendChild(floatEl);
+
+  setTimeout(() => {
+    floatEl.remove();
+  }, 1200);
+}
+
+function getPotEmoji(skin) {
+  if (skin === 'clay') return '🐾';
+  if (skin === 'gold') return '👑';
+  return '🟫';
+}
+
+function renderGreenhouseRealtimeOnly() {
+  const now = Date.now();
+  state.ghSlots.forEach(slot => {
+    if (slot.slotId > state.ghSlotCount) return;
+    const slotEl = document.querySelector(`.gh-slot[data-slot-id="${slot.slotId}"]`);
+    if (!slotEl) return;
+
+    const spec = state.getPlantSpec(slot.plantId);
+
+    if (slot.status === 'growing' && spec) {
+      const elapsed = now - slot.plantedTime;
+      const progress = Math.min(100, (elapsed / spec.growTimeMs) * 100);
+      const remainingMs = Math.max(0, spec.growTimeMs - elapsed);
+      const remainingSec = Math.ceil(remainingMs / 1000);
+
+      const fillEl = slotEl.querySelector('.gh-progress-fill');
+      const textEl = slotEl.querySelector('.gh-progress-text');
+
+      if (fillEl) fillEl.style.width = `${progress}%`;
+      
+      let timeStr = `${remainingSec}秒`;
+      if (remainingSec > 60) {
+        timeStr = `${Math.floor(remainingSec / 60)}分${remainingSec % 60}秒`;
+      }
+      
+      let buffSuffix = '';
+      if (slot.speedMultiplierUntil && now < slot.speedMultiplierUntil) {
+        buffSuffix = ' (⚡成長2倍!)';
+      }
+
+      if (textEl) textEl.textContent = `成長度: ${Math.floor(progress)}% (${timeStr}残る${buffSuffix})`;
+
+      if (progress >= 100) {
+        renderGreenhouse();
+      }
+    }
+
+    if (slot.status === 'mature') {
+      const ptsEl = slotEl.querySelector('.gh-pts-val');
+      if (ptsEl) {
+        ptsEl.textContent = Math.floor(slot.accumulatedPoints);
+      }
+    }
+  });
+
+  updateWaterGameSlider();
+}
+
+let waterGameActive = false;
+let waterGameSlotId = null;
+let waterSliderPos = 0;
+let waterSliderDirection = 1;
+const WATER_SLIDER_SPEED = 4;
+
+function startWaterGame(slotId) {
+  playClickSound();
+  const slotEl = document.querySelector(`.gh-slot[data-slot-id="${slotId}"]`);
+  if (!slotEl || waterGameActive) return;
+
+  waterGameActive = true;
+  waterGameSlotId = slotId;
+  waterSliderPos = 0;
+  waterSliderDirection = 1;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'gh-water-game-overlay';
+  overlay.id = `gh-water-overlay-${slotId}`;
+  overlay.innerHTML = `
+    <div class="gh-water-game-title">💦 タイミングよくタップ！</div>
+    <div class="gh-water-slider-container">
+      <div class="gh-water-target-zone"></div>
+      <div class="gh-water-slider-cursor" id="gh-water-cursor-${slotId}"></div>
+    </div>
+    <button class="gh-water-tap-btn" id="gh-water-stop-btn">STOP!</button>
+  `;
+
+  slotEl.appendChild(overlay);
+
+  const stopBtn = overlay.querySelector('.gh-water-tap-btn');
+  stopBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    stopWaterGame();
+  });
+}
+
+function updateWaterGameSlider() {
+  if (!waterGameActive || !waterGameSlotId) return;
+
+  const cursor = document.getElementById(`gh-water-cursor-${waterGameSlotId}`);
+  if (!cursor) return;
+
+  waterSliderPos += WATER_SLIDER_SPEED * waterSliderDirection;
+  
+  if (waterSliderPos >= 100) {
+    waterSliderPos = 100;
+    waterSliderDirection = -1;
+  } else if (waterSliderPos <= 0) {
+    waterSliderPos = 0;
+    waterSliderDirection = 1;
+  }
+
+  cursor.style.left = `${waterSliderPos}%`;
+}
+
+function stopWaterGame() {
+  if (!waterGameActive || !waterGameSlotId) return;
+
+  const slotId = waterGameSlotId;
+  const overlay = document.getElementById(`gh-water-overlay-${slotId}`);
+  const slot = state.ghSlots.find(s => s.slotId === slotId);
+  const success = waterSliderPos >= 40 && waterSliderPos <= 60;
+
+  waterGameActive = false;
+  waterGameSlotId = null;
+
+  if (overlay) {
+    const title = overlay.querySelector('.gh-water-game-title');
+    const stopBtn = overlay.querySelector('.gh-water-tap-btn');
+    
+    if (stopBtn) stopBtn.style.display = 'none';
+
+    if (success) {
+      if (soundEnabled) audio.playLevelUp();
+      title.innerHTML = '✨ 成功！ EXCELLENT! ✨<br>🌱 30秒間、成長速度2倍ニャ！';
+      title.style.color = '#ffeb3b';
+      
+      if (slot) {
+        slot.speedMultiplier = 2.0;
+        slot.speedMultiplierUntil = Date.now() + 30000;
+        state.saveState();
+      }
+    } else {
+      if (soundEnabled) audio.playClick();
+      title.innerHTML = '💦 おしいニャ！<br>水やり完了！';
+      title.style.color = '#e0e0e0';
+    }
+
+    setTimeout(() => {
+      overlay.remove();
+      renderGreenhouse();
+    }, 1500);
+  }
+}
+
+function openPlantSeedModal(slotId) {
+  playClickSound();
+  const modal = document.getElementById('gh-plant-seed-modal');
+  const listContainer = document.getElementById('gh-seeds-list');
+  if (!modal || !listContainer) return;
+
+  listContainer.innerHTML = '';
+
+  const seedIds = Object.keys(state.ghSeeds).filter(id => state.ghSeeds[id] > 0);
+
+  if (seedIds.length === 0) {
+    listContainer.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--color-text-muted); font-size: 12px; width: 100%;">
+        植えられる種を持っていないニャ。<br>カメラで植物をスキャンして種をゲットするニャ！📸
+      </div>
+    `;
+  } else {
+    seedIds.forEach(seedId => {
+      const count = state.ghSeeds[seedId];
+      const spec = state.getPlantSpec(seedId);
+      if (!spec) return;
+
+      const item = document.createElement('div');
+      item.className = 'gh-seed-item';
+      item.innerHTML = `
+        <div class="gh-seed-item-info">
+          <span class="gh-seed-item-emoji">${spec.emoji}</span>
+          <div class="gh-seed-item-meta">
+            <span class="gh-seed-item-name">${spec.name}</span>
+            <span class="gh-seed-item-desc">${spec.isHybrid ? '✨交配種' : '通常種'} (成長: ${Math.round(spec.growTimeMs / 60000)}分)</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="gh-seed-item-count">x${count}</span>
+          <button class="gh-seed-plant-btn" data-seed-id="${seedId}">まく</button>
+        </div>
+      `;
+
+      item.querySelector('.gh-seed-plant-btn').addEventListener('click', () => {
+        playClickSound();
+        const res = state.plantSeed(slotId, seedId);
+        if (res.success) {
+          if (soundEnabled) audio.playSuccess();
+          modal.style.display = 'none';
+          renderGreenhouse();
+        } else {
+          alert(res.reason);
+        }
+      });
+
+      listContainer.appendChild(item);
+    });
+  }
+
+  modal.style.display = 'flex';
+}
+
+function renderCultivationRecords() {
+  const list = document.getElementById('gh-records-list');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  const records = Object.values(state.ghRecords);
+
+  if (records.length === 0) {
+    list.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: var(--color-text-muted); font-size: 13px; width: 100%;">
+        まだ栽培記録がありませんニャ。<br>開花した植物同士を交配させて新種を見つけるニャ！🔬🌱
+      </div>
+    `;
+  } else {
+    const sorted = [...records].sort((a, b) => new Date(b.discoveredAt) - new Date(a.discoveredAt));
+
+    sorted.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'gh-record-card';
+      
+      const parentA = state.getPlantSpec(r.parents?.[0]);
+      const parentB = state.getPlantSpec(r.parents?.[1]);
+      const parentStr = (parentA && parentB) ? `${parentA.emoji}${parentA.name} ＋ ${parentB.emoji}${parentB.name}` : '不明';
+
+      card.innerHTML = `
+        <div class="gh-record-card-header">
+          <div class="gh-record-card-emoji">${r.emoji || '💮'}</div>
+          <div class="gh-record-card-title">
+            <span class="gh-record-card-name">${r.name}</span>
+            <span class="gh-record-card-parents">交配親: ${parentStr}</span>
+          </div>
+        </div>
+        <div class="gh-record-card-desc">${r.description}</div>
+        <div class="gh-record-card-date">発見日: ${new Date(r.discoveredAt).toLocaleDateString()}</div>
+      `;
+
+      list.appendChild(card);
+    });
   }
 }
 
 function renderGreenhouse() {
-  const greenhouseScreen = document.getElementById('screen-greenhouse');
-  if (!greenhouseScreen) return;
+  const gridContainer = document.getElementById('gh-slots-grid');
+  const potSelect = document.getElementById('gh-pot-select');
+  if (!gridContainer) return;
 
-  const lvl = state.worldTreeLevel;
-  let treeEmoji = '🌱';
-  let stageName = '双葉の芽';
-  if (lvl >= 80) { treeEmoji = '🎄'; stageName = '奇跡 of 神木'; }
-  else if (lvl >= 40) { treeEmoji = '🌲'; stageName = 'そびえ立つ大樹'; }
-  else if (lvl >= 20) { treeEmoji = '🌳'; stageName = '立パーな若木'; }
-  else if (lvl >= 10) { treeEmoji = '🪴'; stageName = '鉢植えの苗木'; }
-  else if (lvl >= 5) { treeEmoji = '🌿'; stageName = '小さな若葉'; }
+  gridContainer.innerHTML = '';
 
-  const expPercentage = (state.worldTreeExp / (lvl * 100)) * 100;
+  const currentPotSkin = state.ghActivePot || 'default';
+  if (potSelect) potSelect.value = currentPotSkin;
 
-  const ghTreeEmoji = document.getElementById('gh-tree-emoji');
-  const ghLevelTitle = document.getElementById('gh-level-title');
-  const ghStageName = document.getElementById('gh-stage-name');
-  const ghExpBarFill = document.getElementById('gh-exp-bar-fill');
-  const ghExpText = document.getElementById('gh-exp-text');
-  
-  if (ghTreeEmoji) ghTreeEmoji.textContent = treeEmoji;
-  if (ghLevelTitle) ghLevelTitle.textContent = `🌳 不思議な世界樹 (Lv. ${lvl})`;
-  if (ghStageName) ghStageName.textContent = `現在の形態: 【${stageName}】`;
-  if (ghExpBarFill) ghExpBarFill.style.width = `${expPercentage}%`;
-  if (ghExpText) ghExpText.textContent = `${state.worldTreeExp} / ${lvl * 100}`;
+  const slotCount = state.ghSlotCount || 3;
 
-  // Update button states
-  const waterBtn = document.getElementById('gh-water-btn');
-  const feedBtn = document.getElementById('gh-feed-btn');
-  if (waterBtn) {
-    waterBtn.disabled = state.points < 100;
+  for (let i = 1; i <= 6; i++) {
+    const slot = state.ghSlots.find(s => s.slotId === i);
+    if (!slot) continue;
+    const slotEl = document.createElement('div');
+    slotEl.className = 'gh-slot';
+    slotEl.setAttribute('data-slot-id', i);
+
+    if (i > slotCount) {
+      slotEl.classList.add('locked');
+      const cost = GREENHOUSE_CONFIG.slotUnlockCosts[i] || 1000;
+      slotEl.innerHTML = `
+        <div class="gh-lock-icon">🔒</div>
+        <div style="font-weight: 800; font-size: 12px; margin-bottom: 2px;">第${i}スロット</div>
+        <div class="gh-lock-cost">🪙 ${cost.toLocaleString()} pts</div>
+      `;
+
+      slotEl.addEventListener('click', () => {
+        playClickSound();
+        if (confirm(`🪙 ${cost} pts を消費して、第${i}プランターを開放するニャ？`)) {
+          const res = state.unlockSlot();
+          if (res.success) {
+            if (soundEnabled) audio.playLevelUp();
+            triggerConfetti();
+            updateUI();
+            renderGreenhouse();
+          } else {
+            alert(res.reason);
+          }
+        }
+      });
+
+      gridContainer.appendChild(slotEl);
+      continue;
+    }
+
+    if (slot.status === 'empty') {
+      slotEl.classList.add('empty');
+      slotEl.innerHTML = `
+        <div style="font-size: 11px; font-weight: bold; color: var(--color-text-muted); margin-bottom: 10px;">スロット ${i} (空)</div>
+        <button class="gh-plant-btn" data-slot-id="${i}">🌱 タネをまく</button>
+      `;
+
+      slotEl.querySelector('.gh-plant-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPlantSeedModal(i);
+      });
+    }
+    else if (slot.status === 'growing') {
+      slotEl.classList.add('growing');
+      const spec = state.getPlantSpec(slot.plantId);
+      const stageEmoji = getStageEmoji(slot.currentStage, spec?.emoji);
+      const potEmoji = getPotEmoji(currentPotSkin);
+
+      slotEl.innerHTML = `
+        <div class="gh-plant-name">${spec?.name || '謎の草'}</div>
+        
+        <div class="gh-plant-visual">
+          ${stageEmoji}
+        </div>
+        <div class="gh-pot-visual">${potEmoji}</div>
+
+        <div class="gh-progress-container">
+          <div class="gh-progress-bar">
+            <div class="gh-progress-fill" style="width: ${slot.growthProgress}%"></div>
+          </div>
+          <div class="gh-progress-text">成長度: ${Math.floor(slot.growthProgress)}%</div>
+        </div>
+
+        <div class="gh-actions-row">
+          <button class="gh-action-btn-mini gh-water-btn" data-slot-id="${i}">
+            💧 水やり
+            <span class="gh-btn-sublabel">ミニゲーム</span>
+          </button>
+          <button class="gh-action-btn-mini gh-fertilizer-btn" data-slot-id="${i}">
+            ✨ 栄養剤
+            <span class="gh-btn-sublabel">🪙 ${GREENHOUSE_CONFIG.fertilizerCost}pts</span>
+          </button>
+        </div>
+      `;
+
+      slotEl.querySelector('.gh-water-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        startWaterGame(i);
+      });
+
+      slotEl.querySelector('.gh-fertilizer-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        const res = state.applyFertilizer(i);
+        if (res.success) {
+          if (soundEnabled) audio.playSuccess();
+          updateUI();
+          renderGreenhouse();
+        } else {
+          alert(res.reason);
+        }
+      });
+    }
+    else if (slot.status === 'mature') {
+      slotEl.classList.add('mature');
+      const spec = state.getPlantSpec(slot.plantId);
+      const potEmoji = getPotEmoji(currentPotSkin);
+
+      const isChecked = selectedBreedSlots.includes(i);
+      const checkboxHtml = `
+        <label class="gh-breed-checkbox-label" data-slot-id="${i}">
+          <input type="checkbox" class="gh-breed-check" data-slot-id="${i}" ${isChecked ? 'checked' : ''}>
+          🧬 交配選ぶ
+        </label>
+      `;
+
+      slotEl.innerHTML = `
+        ${checkboxHtml}
+        <div class="gh-plant-name" style="color: #d97706;">💮 開花！</div>
+        
+        <div class="gh-plant-visual">
+          ${spec?.emoji || '🌸'}
+        </div>
+        <div class="gh-pot-visual">${potEmoji}</div>
+
+        <div class="gh-harvest-box">
+          <div class="gh-accumulated-points">
+            🪙 <span class="gh-pts-val">${Math.floor(slot.accumulatedPoints)}</span> pts
+          </div>
+          <button class="gh-harvest-btn" data-slot-id="${i}">🧺 収穫する</button>
+        </div>
+      `;
+
+      slotEl.querySelector('.gh-harvest-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        triggerPointsFloatEffect(slotEl, Math.floor(slot.accumulatedPoints));
+        
+        selectedBreedSlots = selectedBreedSlots.filter(id => id !== i);
+
+        const res = state.harvestSlot(i);
+        if (res.success) {
+          if (soundEnabled) audio.playSuccess();
+          updateUI();
+          renderGreenhouse();
+        }
+      });
+
+      const checkLabel = slotEl.querySelector('.gh-breed-checkbox-label');
+      const checkInput = slotEl.querySelector('.gh-breed-check');
+
+      const handleCheckChange = (e) => {
+        e.stopPropagation();
+        playClickSound();
+        const checked = checkInput.checked;
+        if (checked) {
+          if (selectedBreedSlots.length >= 2) {
+            alert('⚠️ 交配に選べるのは一度に2つのプランターまでニャ！');
+            checkInput.checked = false;
+            return;
+          }
+          if (!selectedBreedSlots.includes(i)) {
+            selectedBreedSlots.push(i);
+          }
+        } else {
+          selectedBreedSlots = selectedBreedSlots.filter(id => id !== i);
+        }
+        
+        syncBreedingPanel();
+      };
+
+      checkLabel.addEventListener('click', (e) => e.stopPropagation());
+      checkInput.addEventListener('change', handleCheckChange);
+    }
+
+    if (slot.isInfested) {
+      const pestOverlay = document.createElement('div');
+      pestOverlay.className = 'gh-pest-overlay';
+      pestOverlay.innerHTML = `
+        <div class="gh-pest-icon">🐛</div>
+        <div class="gh-infestation-hint">タップで退治！</div>
+      `;
+      pestOverlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        if (soundEnabled) audio.playSuccess();
+        const res = state.cleanupInfestation(i, 'pest');
+        if (res.success) {
+          alert(`🎉 害虫を退治したニャ！\n🪙 ${res.bonusPoints} pts のボーナスを獲得したニャ！😻`);
+          updateUI();
+          renderGreenhouse();
+        }
+      });
+      slotEl.appendChild(pestOverlay);
+    } else if (slot.isWeedy) {
+      const weedOverlay = document.createElement('div');
+      weedOverlay.className = 'gh-weed-overlay';
+      weedOverlay.innerHTML = `
+        <div class="gh-weed-icon">🌱</div>
+        <div class="gh-infestation-hint">タップで草むしり！</div>
+      `;
+      weedOverlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        if (soundEnabled) audio.playSuccess();
+        const res = state.cleanupInfestation(i, 'weed');
+        if (res.success) {
+          alert(`🎉 草むしり完了ニャ！\n🪙 ${res.bonusPoints} pts のボーナスを獲得したニャ！😻`);
+          updateUI();
+          renderGreenhouse();
+        }
+      });
+      slotEl.appendChild(weedOverlay);
+    }
+
+    gridContainer.appendChild(slotEl);
   }
-  if (feedBtn) {
-    feedBtn.disabled = state.points < 500;
-  }
+
+  syncBreedingPanel();
 }
 
 // --------------------------------------------------------------------------

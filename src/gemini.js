@@ -1,12 +1,12 @@
-// Gemini 2.5 Flash API integration for plant recognition
+// Gemini API integration for plant recognition
 
 /**
- * Analyzes a plant image using Gemini 2.5 Flash API
+ * Analyzes a plant image using Gemini API
  * @param {string} base64DataWithPrefix - Base64 encoded image data URL (e.g. data:image/jpeg;base64,...)
  * @param {string} apiKey - User's Gemini API Key
  * @returns {Promise<Object>} Analyzed plant details
  */
-export async function analyzePlantImage(base64DataWithPrefix, apiKey, model = 'gemini-2.5-flash') {
+export async function analyzePlantImage(base64DataWithPrefix, apiKey, model = 'gemini-3.1-flash-lite') {
   if (!apiKey) {
     throw new Error('APIキーが設定されていません。設定画面からキーを設定してください。');
   }
@@ -126,6 +126,101 @@ export async function analyzePlantImage(base64DataWithPrefix, apiKey, model = 'g
     return parsedResult;
   } catch (error) {
     console.error('Gemini API communication failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generates a hybrid plant based on two parent plants using Gemini API
+ * @param {Object} parentA - Parent plant spec (name, emoji, etc.)
+ * @param {Object} parentB - Parent plant spec (name, emoji, etc.)
+ * @param {string} apiKey - User's Gemini API Key
+ * @param {string} model - Gemini API model
+ * @returns {Promise<Object>} Generated hybrid details { name, emoji, description }
+ */
+export async function generateHybridPlant(parentA, parentB, apiKey, model = 'gemini-3.1-flash-lite') {
+  if (!apiKey) {
+    throw new Error('APIキーが設定されていません。設定画面からキーを設定してください。');
+  }
+
+  const systemInstruction = 
+    "あなたは「ニャルド博士（Dr. Nyan）」という名前の、ふくよかな白衣を着た猫の植物学者です。 " +
+    "語尾に「〜ニャ」「〜であるニャ」「〜ニャん」などを使い、温温で博識、かつ少しチャーミングな話し方をします。 " +
+    "ユーザーが温室で2つの異なる植物を掛け合わせて生み出した『新しい架空のハイブリッド植物』の名前、その植物を表現する絵文字、そしてその特徴を解説するユーモアに溢れた猫風の解説文をJSON形式で返してください。";
+
+  const promptText = 
+    `親植物A: 「${parentA.name}」（絵文字: ${parentA.emoji}）\n` +
+    `親植物B: 「${parentB.name}」（絵文字: ${parentB.emoji}）\n\n` +
+    `この2つの植物の特徴を絶妙に融合させ、全く新しい架空のハイブリッド植物を1種類考えてください。\n` +
+    `以下の項目を決定してJSON形式で返してください。\n` +
+    `1. name: 猫が喜びそうな、かつ植物の特徴を表した面白い和名（例：サクラとタンポポなら「サクラポポ」、バラとサボテンなら「トゲトゲローズ」など。もっとユニークでも良いですニャ）\n` +
+    `2. emoji: この植物を最もよく表す絵文字1つ（基本の絵文字から、親植物の絵文字を参考に融合感があるものを選んでください）\n` +
+    `3. description: ニャルド博士がその新種を発見した際のメモのような、生態解説文。なぜか猫を魅了する特徴や、不思議な効能などを、語尾「〜ニャ」「〜であるニャ」を用いて100文字〜120文字程度でユーモラスに書いてください。`;
+
+  const requestBody = {
+    contents: [
+      {
+        parts: [
+          { text: promptText }
+        ]
+      }
+    ],
+    systemInstruction: {
+      parts: [
+        { text: systemInstruction }
+      ]
+    },
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          name: { 
+            type: "STRING", 
+            description: "ハイブリッド植物のユニークな和名" 
+          },
+          emoji: { 
+            type: "STRING", 
+            description: "植物を表す絵文字1文字" 
+          },
+          description: { 
+            type: "STRING", 
+            description: "ニャルド博士による猫語の生態解説文（100〜120文字程度、語尾は〜ニャ）" 
+          }
+        },
+        required: ["name", "emoji", "description"]
+      }
+    }
+  };
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      const errMsg = errData.error?.message || `HTTP error ${response.status}`;
+      throw new Error(`Gemini API エラー: ${errMsg}`);
+    }
+
+    const resData = await response.json();
+    const textResult = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!textResult) {
+      throw new Error('AIから応答データが得られませんでしたニャ。');
+    }
+
+    const parsedResult = JSON.parse(textResult.trim());
+    return parsedResult;
+  } catch (error) {
+    console.error('Gemini API hybrid generation failed:', error);
     throw error;
   }
 }

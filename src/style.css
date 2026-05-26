@@ -3281,12 +3281,36 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
-   Greenhouse Screen & Styling
+   Greenhouse Screen & Styling (大型アップデート版)
    ========================================================================== */
 #screen-greenhouse {
-  background: linear-gradient(135deg, #eaf6ec 0%, #f7fbf8 50%, #fffdec 100%);
   position: relative;
   overflow-y: auto;
+  transition: background 0.5s ease;
+  height: calc(100vh - 60px);
+}
+
+/* 温室テーマ定義 */
+#screen-greenhouse.theme-gh-default {
+  background: linear-gradient(135deg, #eaf6ec 0%, #f7fbf8 50%, #fffdec 100%);
+}
+#screen-greenhouse.theme-gh-starry {
+  background: linear-gradient(135deg, #090d16 0%, #111827 50%, #1e1b4b 100%);
+  color: #f1f5f9;
+}
+#screen-greenhouse.theme-gh-neon {
+  background: linear-gradient(135deg, #09090b 0%, #18181b 50%, #2e1049 100%);
+  color: #f4f4f5;
+}
+
+/* 星空テーマ時のテキストカラー補正 */
+#screen-greenhouse.theme-gh-starry .greenhouse-header-bar h2,
+#screen-greenhouse.theme-gh-neon .greenhouse-header-bar h2 {
+  color: #fff;
+}
+#screen-greenhouse.theme-gh-starry .greenhouse-subtitle,
+#screen-greenhouse.theme-gh-neon .greenhouse-subtitle {
+  color: #a1a1aa;
 }
 
 /* Glasshouse Grid Background Overlay */
@@ -3295,32 +3319,47 @@ input:checked + .slider:before {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background-image: 
-    linear-gradient(rgba(127, 169, 152, 0.1) 1.5px, transparent 1.5px),
-    linear-gradient(90deg, rgba(127, 169, 152, 0.1) 1.5px, transparent 1.5px);
-  background-size: 40px 60px;
+    linear-gradient(rgba(127, 169, 152, 0.08) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(127, 169, 152, 0.08) 1.5px, transparent 1.5px);
+  background-size: 30px 45px;
   pointer-events: none;
   z-index: 1;
 }
 
+/* 星空・サイバー時のグリッド線調整 */
+#screen-greenhouse.theme-gh-starry::before {
+  background-image: 
+    linear-gradient(rgba(99, 102, 241, 0.08) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.08) 1.5px, transparent 1.5px);
+}
+#screen-greenhouse.theme-gh-neon::before {
+  background-image: 
+    linear-gradient(rgba(217, 70, 239, 0.08) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(217, 70, 239, 0.08) 1.5px, transparent 1.5px);
+}
+
 .greenhouse-header-bar {
   padding: 15px;
-  text-align: center;
   position: relative;
   z-index: 2;
-  margin-top: 10px;
+  border-bottom: 1.5px solid rgba(127, 169, 152, 0.15);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .greenhouse-header-bar h2 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
   color: var(--color-primary-dark);
-  margin-bottom: 2px;
+  margin: 0;
 }
 
 .greenhouse-subtitle {
   font-size: 11px;
   color: var(--color-text-muted);
   font-weight: 700;
+  margin-top: 2px;
 }
 
 .greenhouse-container {
@@ -3330,86 +3369,684 @@ input:checked + .slider:before {
   gap: 15px;
   position: relative;
   z-index: 2;
+  padding-bottom: 80px; /* ナビバーとの被り防止 */
 }
 
-/* Glasshouse Card */
-.glasshouse-card {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+/* カスタマイズパネル */
+.gh-custom-panel {
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  padding: 10px;
+  border-radius: var(--border-radius-sm);
+  z-index: 2;
+}
+#screen-greenhouse.theme-gh-starry .gh-custom-panel,
+#screen-greenhouse.theme-gh-neon .gh-custom-panel {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gh-custom-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gh-custom-item label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+#screen-greenhouse.theme-gh-starry .gh-custom-item label,
+#screen-greenhouse.theme-gh-neon .gh-custom-item label {
+  color: #94a3b8;
+}
+
+.gh-select-custom {
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  font-size: 11.5px;
+  padding: 0 4px;
+  background: white;
+  color: var(--color-text-dark);
+}
+#screen-greenhouse.theme-gh-starry .gh-select-custom,
+#screen-greenhouse.theme-gh-neon .gh-select-custom {
+  background: #1e293b;
+  border-color: #334155;
+  color: white;
+}
+
+/* 栽培グリッド */
+.gh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* 栽培スロット */
+.gh-slot {
+  background: rgba(255, 255, 255, 0.6);
   border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: var(--border-radius-md);
-  padding: 25px 20px;
-  box-shadow: 0 8px 32px rgba(127, 169, 152, 0.1);
+  padding: 12px;
+  min-height: 185px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   position: relative;
   overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(4px);
+}
+#screen-greenhouse.theme-gh-starry .gh-slot {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+#screen-greenhouse.theme-gh-neon .gh-slot {
+  background: rgba(24, 24, 27, 0.6);
+  border-color: rgba(168, 85, 247, 0.2);
 }
 
-/* Sun rays animation */
-.sun-rays {
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,253,220,0.4) 0%, transparent 60%);
-  pointer-events: none;
-  animation: rotateSun 20s linear infinite;
+.gh-slot:active {
+  transform: scale(0.97);
 }
 
-@keyframes rotateSun {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* 各スロットの状態別の線 */
+.gh-slot.growing {
+  border-color: rgba(74, 222, 128, 0.5);
+}
+.gh-slot.mature {
+  border-color: #f59e0b;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+  background: radial-gradient(circle at center, rgba(255,253,220,0.5) 0%, rgba(255,255,255,0.7) 100%);
+  animation: pulseGold 2s infinite alternate;
+}
+#screen-greenhouse.theme-gh-starry .gh-slot.mature {
+  background: radial-gradient(circle at center, rgba(251,191,36,0.15) 0%, rgba(30,41,59,0.7) 100%);
+}
+#screen-greenhouse.theme-gh-neon .gh-slot.mature {
+  background: radial-gradient(circle at center, rgba(168,85,247,0.15) 0%, rgba(24,24,27,0.7) 100%);
 }
 
-.wt-visual-container.big {
-  width: 140px;
-  height: 140px;
-  font-size: 72px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 4px solid var(--color-primary);
-  border-radius: 50%;
+@keyframes pulseGold {
+  from { box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1); }
+  to { box-shadow: 0 4px 20px rgba(245, 158, 11, 0.35); }
+}
+
+/* ロックスロット */
+.gh-slot.locked {
+  background: rgba(0, 0, 0, 0.05);
+  border: 2px dashed rgba(0, 0, 0, 0.15);
+  color: var(--color-text-muted);
+  justify-content: center;
+  gap: 8px;
+}
+#screen-greenhouse.theme-gh-starry .gh-slot.locked,
+#screen-greenhouse.theme-gh-neon .gh-slot.locked {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #64748b;
+}
+
+.gh-lock-icon {
+  font-size: 28px;
+  animation: floatMini 3s ease-in-out infinite alternate;
+}
+.gh-lock-cost {
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#screen-greenhouse.theme-gh-starry .gh-lock-cost,
+#screen-greenhouse.theme-gh-neon .gh-lock-cost {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+/* 空スロット */
+.gh-slot.empty {
+  justify-content: center;
+}
+.gh-plant-btn {
+  background: var(--color-primary-light);
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary-dark);
+  font-weight: bold;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: background-color 0.2s;
+}
+.gh-plant-btn:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* 植物の絵文字エリア */
+.gh-plant-visual {
+  font-size: 44px;
+  height: 55px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 25px rgba(127, 169, 152, 0.2);
-  animation: floatBig 4s ease-in-out infinite alternate;
+  position: relative;
 }
 
-@keyframes floatBig {
-  0% { transform: translateY(0px) rotate(0deg); }
-  100% { transform: translateY(-8px) rotate(2deg); }
+.gh-slot.mature .gh-plant-visual {
+  animation: shakeShort 3s ease-in-out infinite;
 }
 
-.greenhouse-actions-panel {
+@keyframes shakeShort {
+  0%, 100% { transform: rotate(0); }
+  20%, 60% { transform: rotate(-5deg); }
+  40%, 80% { transform: rotate(5deg); }
+}
+
+/* 植木鉢のスキン表示 */
+.gh-pot-visual {
+  font-size: 22px;
+  margin-top: -12px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* 成長進捗ゲージ */
+.gh-progress-container {
+  width: 100%;
+  margin: 6px 0;
+}
+.gh-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+#screen-greenhouse.theme-gh-starry .gh-progress-bar,
+#screen-greenhouse.theme-gh-neon .gh-progress-bar {
+  background: rgba(255,255,255,0.1);
+}
+.gh-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.gh-progress-text {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: 3px;
+  font-weight: bold;
+}
+#screen-greenhouse.theme-gh-starry .gh-progress-text,
+#screen-greenhouse.theme-gh-neon .gh-progress-text {
+  color: #94a3b8;
+}
+
+/* スロット名 */
+.gh-plant-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-text-dark);
+  text-align: center;
+  margin-bottom: 2px;
+}
+#screen-greenhouse.theme-gh-starry .gh-plant-name,
+#screen-greenhouse.theme-gh-neon .gh-plant-name {
+  color: white;
+}
+
+/* お世話アクションボタン */
+.gh-actions-row {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+.gh-action-btn-mini {
+  flex: 1;
+  padding: 5px 2px;
+  font-size: 9.5px;
+  font-weight: bold;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  transition: background-color 0.2s;
+}
+#screen-greenhouse.theme-gh-starry .gh-action-btn-mini,
+#screen-greenhouse.theme-gh-neon .gh-action-btn-mini {
+  background: #1e293b;
+  border-color: #334155;
+  color: white;
+}
+.gh-action-btn-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.gh-btn-sublabel {
+  font-size: 7.5px;
+  font-weight: normal;
+  color: var(--color-text-muted);
+}
+#screen-greenhouse.theme-gh-starry .gh-btn-sublabel,
+#screen-greenhouse.theme-gh-neon .gh-btn-sublabel {
+  color: #64748b;
+}
+
+/* 成熟時のポイント回収表示 */
+.gh-harvest-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.gh-accumulated-points {
+  font-size: 12px;
+  font-weight: 900;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.6);
+}
+#screen-greenhouse.theme-gh-starry .gh-accumulated-points,
+#screen-greenhouse.theme-gh-neon .gh-accumulated-points {
+  text-shadow: none;
+  color: #fbbf24;
+}
+.gh-harvest-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  font-weight: 900;
+  width: 100%;
+  padding: 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+  animation: floatMini 2s ease-in-out infinite alternate;
+}
+
+/* 交配チェックボックス */
+.gh-breed-checkbox-label {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.9);
+  padding: 4px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: bold;
+  color: var(--color-text-dark);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+#screen-greenhouse.theme-gh-starry .gh-breed-checkbox-label,
+#screen-greenhouse.theme-gh-neon .gh-breed-checkbox-label {
+  background: rgba(15,23,42,0.9);
+  color: white;
+  border-color: #334155;
+}
+
+/* 害虫・雑草オーバーレイ */
+.gh-pest-overlay, .gh-weed-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.15);
+  z-index: 10;
+  cursor: pointer;
+  animation: pulseRed 1.5s infinite alternate;
+  border-radius: var(--border-radius-md);
+}
+.gh-weed-overlay {
+  background: rgba(16, 185, 129, 0.12);
+  animation: pulseGreen 1.5s infinite alternate;
+}
+
+@keyframes pulseRed {
+  from { background-color: rgba(239, 68, 68, 0.05); }
+  to { background-color: rgba(239, 68, 68, 0.2); }
+}
+@keyframes pulseGreen {
+  from { background-color: rgba(16, 185, 129, 0.05); }
+  to { background-color: rgba(16, 185, 129, 0.2); }
+}
+
+.gh-pest-icon, .gh-weed-icon {
+  font-size: 38px;
+  animation: shakeWobble 2s infinite;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+@keyframes shakeWobble {
+  0%, 100% { transform: scale(1) translate(0,0) rotate(0); }
+  25% { transform: scale(1.1) translate(-2px, 3px) rotate(-8deg); }
+  50% { transform: scale(1.05) translate(2px, -2px) rotate(8deg); }
+  75% { transform: scale(1.15) translate(-1px, -1px) rotate(-4deg); }
+}
+
+.gh-infestation-hint {
+  position: absolute;
+  bottom: 8px;
+  font-size: 8.5px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+/* 交配ラボパネル */
+.gh-breed-panel {
   background: var(--color-card-white);
   border-radius: var(--border-radius-md);
   padding: 15px;
   border: 1.5px solid var(--color-border);
   box-shadow: var(--shadow-soft);
+  text-align: center;
+  z-index: 2;
+}
+#screen-greenhouse.theme-gh-starry .gh-breed-panel,
+#screen-greenhouse.theme-gh-neon .gh-breed-panel {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255,255,255,0.08);
 }
 
-.greenhouse-actions-panel h4 {
-  font-size: 13px;
+.gh-breed-header h4 {
+  margin: 0 0 2px 0;
   color: var(--color-primary-dark);
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-size: 13.5px;
+  font-weight: 900;
+}
+#screen-greenhouse.theme-gh-starry .gh-breed-header h4,
+#screen-greenhouse.theme-gh-neon .gh-breed-header h4 {
+  color: white;
+}
+.gh-breed-header p {
+  margin: 0 0 10px 0;
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+}
+#screen-greenhouse.theme-gh-starry .gh-breed-header p,
+#screen-greenhouse.theme-gh-neon .gh-breed-header p {
+  color: #94a3b8;
+}
+
+.gh-breed-selection-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin: 10px 0;
+}
+
+.gh-breed-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.gh-breed-slot span {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+#screen-greenhouse.theme-gh-starry .gh-breed-slot span,
+#screen-greenhouse.theme-gh-neon .gh-breed-slot span {
+  color: #64748b;
+}
+
+.gh-breed-slot-inner {
+  width: 55px;
+  height: 55px;
+  border-radius: 12px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.03);
+}
+#screen-greenhouse.theme-gh-starry .gh-breed-slot-inner,
+#screen-greenhouse.theme-gh-neon .gh-breed-slot-inner {
+  border-color: #334155;
+  background: rgba(15,23,42,0.5);
+}
+
+.gh-breed-slot-inner.selected {
+  border: 2px solid #f59e0b;
+  background: #fffbeb;
+  animation: pulseGold 1.5s infinite alternate;
+}
+#screen-greenhouse.theme-gh-starry .gh-breed-slot-inner.selected,
+#screen-greenhouse.theme-gh-neon .gh-breed-slot-inner.selected {
+  background: rgba(251,191,36,0.1);
+  border-color: #f59e0b;
+}
+
+.gh-breed-plus {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--color-text-muted);
+}
+
+/* 種まきモーダル内のリストアイテム */
+.gh-seed-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+.gh-seed-item:active {
+  background-color: var(--color-primary-light);
+}
+.gh-seed-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gh-seed-item-emoji {
+  font-size: 26px;
+}
+.gh-seed-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.gh-seed-item-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-text-dark);
+}
+.gh-seed-item-desc {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+.gh-seed-item-count {
+  font-size: 11px;
+  font-weight: 900;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  padding: 2.5px 8px;
+  border-radius: 12px;
+}
+.gh-seed-plant-btn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* 栽培記録カード */
+.gh-record-card {
+  background: var(--color-card-white);
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-soft);
+  width: 100%;
+}
+.gh-record-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gh-record-card-emoji {
+  width: 45px;
+  height: 45px;
+  font-size: 26px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--color-primary);
+}
+.gh-record-card-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.gh-record-card-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--color-primary-dark);
+}
+.gh-record-card-parents {
+  font-size: 9px;
+  color: var(--color-text-muted);
+}
+.gh-record-card-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-dark);
+  background: var(--color-bg-light);
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+.gh-record-card-date {
+  font-size: 8.5px;
+  color: var(--color-text-muted);
+  text-align: right;
+  margin-top: -4px;
+}
+
+/* ポイント上昇アニメーション用 */
+.gh-float-points {
+  position: absolute;
+  color: #f59e0b;
+  font-weight: 900;
+  font-size: 16px;
+  pointer-events: none;
+  animation: floatUpPoints 1.2s ease-out forwards;
+  z-index: 100;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+@keyframes floatUpPoints {
+  0% { transform: translateY(0) scale(0.8); opacity: 1; }
+  100% { transform: translateY(-40px) scale(1.1); opacity: 0; }
+}
+
+/* 水やりミニゲーム用スライダー */
+.gh-water-game-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  color: white;
+  border-radius: var(--border-radius-md);
+}
+.gh-water-game-title {
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #ffeb3b;
   text-align: center;
 }
-
-.wt-stage-lbl {
-  font-size: 12px;
-  color: var(--color-primary-dark);
-  font-weight: 700;
-  background-color: var(--color-primary-light);
-  padding: 3px 10px;
-  border-radius: 20px;
-  display: inline-block;
-  margin: 4px auto;
+.gh-water-slider-container {
+  width: 90%;
+  height: 16px;
+  background: #444;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+  border: 1.5px solid #666;
 }
-
-
+.gh-water-target-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #22c55e;
+  width: 20%;
+  left: 40%;
+  box-shadow: 0 0 8px #22c55e;
+}
+.gh-water-slider-cursor {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: white;
+  left: 0%;
+  box-shadow: 0 0 4px black;
+}
+.gh-water-tap-btn {
+  background: #22c55e;
+  border: none;
+  color: white;
+  font-weight: bold;
+  padding: 6px 16px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+}

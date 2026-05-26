@@ -330,47 +330,62 @@
       <!-- SCREEN: GREENHOUSE (温室) -->
       <section id="screen-greenhouse" class="app-screen">
         <div class="greenhouse-header-bar">
-          <h2>ニャルドの温室</h2>
-          <div class="greenhouse-subtitle">不思議な世界樹の育成</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="text-align: left;">
+              <h2>ニャルドの温室ラボ</h2>
+              <div class="greenhouse-subtitle">不思議な交配と放置栽培</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="small-outline-btn" id="gh-open-records-btn" style="padding: 6px 10px;">📖 栽培記録</button>
+              <button class="small-btn" id="gh-harvest-all-btn" style="background-color: var(--color-primary); color: white; padding: 6px 12px;">🧺 一括回収</button>
+            </div>
+          </div>
         </div>
 
         <div class="greenhouse-container">
-          <!-- Glasshouse Card -->
-          <div class="glasshouse-card">
-            <!-- Sun rays overlay -->
-            <div class="sun-rays"></div>
-            
-            <div class="wt-visual-container big">
-              <span id="gh-tree-emoji">🌱</span>
+          <!-- Greenhouse Customization -->
+          <div class="gh-custom-panel">
+            <div class="gh-custom-item">
+              <label>🏞️ テーマ</label>
+              <select id="gh-theme-select" class="gh-select-custom">
+                <option value="default">🌳 木漏れ日のウッドハウス</option>
+                <option value="starry">🌌 星空のバイオドーム</option>
+                <option value="neon">⚡ サイバー・ネオンガラス</option>
+              </select>
             </div>
-            
-            <div class="wt-stats">
-              <div class="wt-level-badge" id="gh-level-title">🌳 不思議な世界樹 (Lv. 1)</div>
-              <div class="wt-stage-lbl" id="gh-stage-name">現在の形態: 【双葉の芽】</div>
-              
-              <div class="wt-exp-bar-container">
-                <div class="wt-exp-bar-fill" id="gh-exp-bar-fill" style="width: 0%"></div>
-              </div>
-              <div class="wt-exp-info">
-                <span>EXP</span>
-                <span id="gh-exp-text">0 / 100</span>
-              </div>
+            <div class="gh-custom-item">
+              <label>🪴 植木鉢</label>
+              <select id="gh-pot-select" class="gh-select-custom">
+                <option value="default">🟫 素焼きテラコッタ</option>
+                <option value="clay">🐾 ニャンコ陶器鉢</option>
+                <option value="gold">👑 黄金のロイヤル</option>
+              </select>
             </div>
           </div>
 
-          <!-- Actions Panel -->
-          <div class="greenhouse-actions-panel">
-            <h4>🌱 世界樹をお世話するニャ</h4>
-            <div class="wt-actions">
-              <button class="wt-btn" id="gh-water-btn">
-                💧 水やり
-                <span class="wt-btn-cost">🪙 100 pts (+10 EXP)</span>
-              </button>
-              <button class="wt-btn" id="gh-feed-btn">
-                ✨ 高級肥料
-                <span class="wt-btn-cost">🪙 500 pts (+60 EXP)</span>
-              </button>
+          <!-- Glasshouse Grid -->
+          <div class="gh-grid" id="gh-slots-grid">
+            <!-- Dynamically populated slots -->
+          </div>
+
+          <!-- Breeding Lab Panel -->
+          <div class="gh-breed-panel" id="gh-breed-control-panel">
+            <div class="gh-breed-header">
+              <h4>🔬 不思議な交配実験室</h4>
+              <p>成熟(開花)した植物を2つ選んで掛け合わせるニャ！</p>
             </div>
+            <div class="gh-breed-selection-row">
+              <div class="gh-breed-slot" id="gh-breed-parent-1">
+                <div class="gh-breed-slot-inner">❓</div>
+                <span>親植物A</span>
+              </div>
+              <div class="gh-breed-plus">＋</div>
+              <div class="gh-breed-slot" id="gh-breed-parent-2">
+                <div class="gh-breed-slot-inner">❓</div>
+                <span>親植物B</span>
+              </div>
+            </div>
+            <button class="primary-btn" id="gh-breed-execute-btn" disabled style="width: 100%; margin-top: 10px; padding: 12px;">🧪 交配を実行する（2つ消費）</button>
           </div>
         </div>
       </section>
@@ -807,6 +822,57 @@
       
       <div style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 15px;" id="ad-mock-timer">残り 10 秒</div>
       <p style="font-size: 11px; color: #666; line-height: 1.4;">※途中で閉じるとポイントは獲得できないニャ。</p>
+    </div>
+  </div>
+
+  <!-- MODAL: PLANT SEED (種まきモーダル) -->
+  <div class="result-backdrop" id="gh-plant-seed-modal" style="display: none; z-index: 1000;">
+    <div class="result-modal" style="max-width: 90%; width: 360px; padding: 20px; border-radius: var(--border-radius-md); box-shadow: var(--shadow-md);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1.5px solid var(--color-border); padding-bottom: 8px; width: 100%;">
+        <h3 style="margin: 0; color: var(--color-primary-dark); font-weight: 800;">🌱 種をまくニャ</h3>
+        <button class="close-btn" id="gh-close-plant-modal-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--color-text-muted); line-height: 1;">×</button>
+      </div>
+      <p style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.4;">植える種を選択してください。成長するとポイントを自動生産しますニャ！</p>
+      <div id="gh-seeds-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; width: 100%;">
+        <!-- Dynamically populated seed list -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BREED RESULT (交配結果モーダル) -->
+  <div class="result-backdrop" id="gh-breed-result-modal" style="display: none; z-index: 1010; background: rgba(0,0,0,0.85);">
+    <div class="result-modal" style="max-width: 90%; width: 420px; text-align: center; padding: 25px 20px; overflow: hidden; position: relative; border-radius: var(--border-radius-md); border: 2px solid #ffeb3b; background: #2d2621;">
+      <!-- Confetti inside modal -->
+      <div class="result-confetti-holder" id="gh-breed-confetti" style="pointer-events: none;"></div>
+      
+      <div style="font-size: 14px; font-weight: 900; color: #ffeb3b; text-shadow: 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 5px; letter-spacing: 1px;">✨ NEW HYBRID DISCOVERED! ✨</div>
+      <h2 style="color: white; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 22px; font-weight: 900;">🎉 新種誕生ニャ！ 🎉</h2>
+      
+      <div class="wt-visual-container big" style="margin: 20px auto; width: 130px; height: 130px; font-size: 72px; border-color: #ffeb3b; background: radial-gradient(circle, #fff 40%, #fff9c4 100%); animation: floatBig 4s ease-in-out infinite alternate; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 4px solid #ffeb3b;">
+        <span id="gh-breed-result-emoji">💮</span>
+      </div>
+      
+      <h3 id="gh-breed-result-name" style="color: #ffeb3b; font-size: 20px; font-weight: 900; margin-bottom: 15px; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">サクラポポ</h3>
+      
+      <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 15px; color: #f0f0f0; font-size: 12.5px; line-height: 1.6; text-align: left; margin-bottom: 20px; backdrop-filter: blur(4px); width: 100%;">
+        <p id="gh-breed-result-desc" style="margin: 0; font-weight: 500;">ニャルド博士のメモ: サクラの華やかさとタンポポのタフさが合体したニャ！風に乗って桜色の綿毛が舞い散る美しい姿は必見ニャん。</p>
+      </div>
+
+      <button class="primary-btn" id="gh-breed-result-close-btn" style="background: #ffeb3b; color: #3e2723; border: none; font-weight: bold; padding: 10px 40px; border-radius: 20px; cursor: pointer; transition: transform 0.2s;">栽培記録に保存するニャ</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CULTIVATION RECORDS (栽培記録モーダル) -->
+  <div class="result-backdrop" id="gh-records-modal" style="display: none; z-index: 1000;">
+    <div class="result-modal" style="max-width: 95%; width: 460px; padding: 20px; height: 80vh; display: flex; flex-direction: column; border-radius: var(--border-radius-md);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1.5px solid var(--color-border); padding-bottom: 8px; width: 100%;">
+        <h3 style="margin: 0; color: var(--color-primary-dark); display: flex; align-items: center; gap: 6px; font-weight: 900;">📖 ニャルドの栽培記録</h3>
+        <button class="close-btn" id="gh-close-records-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--color-text-muted); line-height: 1;">×</button>
+      </div>
+      <p style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.4; width: 100%;">交配によって発見した、あなただけの新種植物の図鑑ニャ。</p>
+      <div id="gh-records-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; width: 100%; padding-bottom: 10px;">
+        <!-- Dynamically populated hybrid cards -->
+      </div>
     </div>
   </div>
 
