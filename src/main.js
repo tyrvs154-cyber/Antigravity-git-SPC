@@ -16,7 +16,8 @@ const el = {
     home: document.getElementById('screen-home'),
     scan: document.getElementById('screen-scan'),
     zukan: document.getElementById('screen-zukan'),
-    badges: document.getElementById('screen-badges')
+    badges: document.getElementById('screen-badges'),
+    greenhouse: document.getElementById('screen-greenhouse')
   },
   
   // Navigation Tabs
@@ -211,6 +212,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupBadges();
   setupTitleSelector();
   setupShop();
+  setupGreenhouse();
   setupLeafDrifts();
   
   // Random Nyan Home message
@@ -288,6 +290,10 @@ function setupNav() {
       if (targetScreen === 'badges') {
         renderBadgesGrid();
       }
+
+      if (targetScreen === 'greenhouse') {
+        renderGreenhouse();
+      }
     });
   });
 
@@ -349,6 +355,8 @@ function updateUI() {
     }
     return acc;
   }, []).length;
+
+  renderGreenhouse();
 }
 
 // --------------------------------------------------------------------------
@@ -466,8 +474,29 @@ function setupSettings() {
   } else {
     el.modeDemoBtn.classList.add('active');
     el.modeGeminiBtn.classList.remove('active');
-    el.scanModeLabel.textContent = 'デモモード';
     el.scanModeLabel.className = 'scan-mode-indicator';
+  }
+
+  // Debug Points buttons
+  const add1kBtn = document.getElementById('debug-add-1k-btn');
+  const add10kBtn = document.getElementById('debug-add-10k-btn');
+  if (add1kBtn) {
+    add1kBtn.addEventListener('click', () => {
+      playClickSound();
+      state.points += 1000;
+      state.saveState();
+      updateUI();
+      alert('🪙 1,000 pts 増やしたニャ！');
+    });
+  }
+  if (add10kBtn) {
+    add10kBtn.addEventListener('click', () => {
+      playClickSound();
+      state.points += 10000;
+      state.saveState();
+      updateUI();
+      alert('🪙 10,000 pts 増やしたニャ！');
+    });
   }
 }
 
@@ -1753,79 +1782,6 @@ function setupShop() {
         grid.appendChild(card);
       });
 
-    } else if (activeTab === 'worldtree') {
-      descText.innerHTML = `ポイントを消費して、不思議な世界樹を育てることができる温室ニャ！<br>水やりや肥料を施して、世界樹をレベルアップさせるニャ！`;
-      
-      // Determine tree emoji based on level
-      let treeEmoji = '🌱';
-      let stageName = '双葉の芽';
-      const lvl = state.worldTreeLevel;
-      if (lvl >= 80) { treeEmoji = '🎄'; stageName = '奇跡 of 神木'; }
-      else if (lvl >= 40) { treeEmoji = '🌲'; stageName = 'そびえ立つ大樹'; }
-      else if (lvl >= 20) { treeEmoji = '🌳'; stageName = '立派な若木'; }
-      else if (lvl >= 10) { treeEmoji = '🪴'; stageName = '鉢植えの苗木'; }
-      else if (lvl >= 5) { treeEmoji = '🌿'; stageName = '小さな若葉'; }
-
-      const expPercentage = (state.worldTreeExp / (lvl * 100)) * 100;
-      
-      const wtHtml = `
-        <div class="worldtree-greenhouse">
-          <div class="wt-visual-container">
-            ${treeEmoji}
-          </div>
-          <div class="wt-stats">
-            <div class="wt-level-badge">🌳 不思議な世界樹 (Lv. ${lvl})</div>
-            <div style="font-size: 11px; color: var(--color-pink); font-weight: 700; margin-bottom: 4px;">現在の形態: 【${stageName}】</div>
-            <div class="wt-exp-bar-container">
-              <div class="wt-exp-bar-fill" style="width: ${expPercentage}%"></div>
-            </div>
-            <div class="wt-exp-info">
-              <span>EXP</span>
-              <span>${state.worldTreeExp} / ${lvl * 100}</span>
-            </div>
-          </div>
-          <div class="wt-actions">
-            <button class="wt-btn" id="wt-water-btn" ${state.points >= 100 ? '' : 'disabled'}>
-              💧 水やり
-              <span class="wt-btn-cost">🪙 100 pts (+10 EXP)</span>
-            </button>
-            <button class="wt-btn" id="wt-feed-btn" ${state.points >= 500 ? '' : 'disabled'}>
-              ✨ 高級肥料
-              <span class="wt-btn-cost">🪙 500 pts (+60 EXP)</span>
-            </button>
-          </div>
-        </div>
-      `;
-      
-      const wtWrapper = document.createElement('div');
-      wtWrapper.style.width = '100%';
-      wtWrapper.innerHTML = wtHtml;
-      grid.appendChild(wtWrapper);
-
-      // Bind greenhouse button clicks
-      const waterBtn = wtWrapper.querySelector('#wt-water-btn');
-      const feedBtn = wtWrapper.querySelector('#wt-feed-btn');
-
-      const triggerFeed = (type) => {
-        playClickSound();
-        const res = state.feedTree(type);
-        if (res.success) {
-          if (res.leveledUp) {
-            if (soundEnabled) audio.playLevelUp();
-            triggerConfetti();
-            alert(`🎉 世界樹がレベルアップしたニャ！\n🌳 Lv. ${res.newLevel - 1} ➔ Lv. ${res.newLevel} に成長したニャ！`);
-          } else {
-            if (soundEnabled) audio.playSuccess();
-          }
-          renderShopItems();
-          updateUI();
-        } else {
-          alert(res.reason);
-        }
-      };
-
-      if (waterBtn) waterBtn.addEventListener('click', () => triggerFeed('water'));
-      if (feedBtn) feedBtn.addEventListener('click', () => triggerFeed('fertilizer'));
     }
   };
 
@@ -1974,4 +1930,75 @@ function setupLightbox() {
     playClickSound();
     el.lightboxModalBackdrop.style.display = 'none';
   });
+}
+
+// --------------------------------------------------------------------------
+// Greenhouse (温室世界樹) Screen handlers
+// --------------------------------------------------------------------------
+function setupGreenhouse() {
+  const waterBtn = document.getElementById('gh-water-btn');
+  const feedBtn = document.getElementById('gh-feed-btn');
+
+  const triggerFeed = (type) => {
+    playClickSound();
+    const res = state.feedTree(type);
+    if (res.success) {
+      if (res.leveledUp) {
+        if (soundEnabled) audio.playLevelUp();
+        triggerConfetti();
+        alert(`🎉 世界樹がレベルアップしたニャ！\n🌳 Lv. ${res.newLevel - 1} ➔ Lv. ${res.newLevel} に成長したニャ！`);
+      } else {
+        if (soundEnabled) audio.playSuccess();
+      }
+      renderGreenhouse();
+      updateUI();
+    } else {
+      alert(res.reason);
+    }
+  };
+
+  if (waterBtn) {
+    waterBtn.addEventListener('click', () => triggerFeed('water'));
+  }
+  if (feedBtn) {
+    feedBtn.addEventListener('click', () => triggerFeed('fertilizer'));
+  }
+}
+
+function renderGreenhouse() {
+  const greenhouseScreen = document.getElementById('screen-greenhouse');
+  if (!greenhouseScreen) return;
+
+  const lvl = state.worldTreeLevel;
+  let treeEmoji = '🌱';
+  let stageName = '双葉の芽';
+  if (lvl >= 80) { treeEmoji = '🎄'; stageName = '奇跡 of 神木'; }
+  else if (lvl >= 40) { treeEmoji = '🌲'; stageName = 'そびえ立つ大樹'; }
+  else if (lvl >= 20) { treeEmoji = '🌳'; stageName = '立パーな若木'; }
+  else if (lvl >= 10) { treeEmoji = '🪴'; stageName = '鉢植えの苗木'; }
+  else if (lvl >= 5) { treeEmoji = '🌿'; stageName = '小さな若葉'; }
+
+  const expPercentage = (state.worldTreeExp / (lvl * 100)) * 100;
+
+  const ghTreeEmoji = document.getElementById('gh-tree-emoji');
+  const ghLevelTitle = document.getElementById('gh-level-title');
+  const ghStageName = document.getElementById('gh-stage-name');
+  const ghExpBarFill = document.getElementById('gh-exp-bar-fill');
+  const ghExpText = document.getElementById('gh-exp-text');
+  
+  if (ghTreeEmoji) ghTreeEmoji.textContent = treeEmoji;
+  if (ghLevelTitle) ghLevelTitle.textContent = `🌳 不思議な世界樹 (Lv. ${lvl})`;
+  if (ghStageName) ghStageName.textContent = `現在の形態: 【${stageName}】`;
+  if (ghExpBarFill) ghExpBarFill.style.width = `${expPercentage}%`;
+  if (ghExpText) ghExpText.textContent = `${state.worldTreeExp} / ${lvl * 100}`;
+
+  // Update button states
+  const waterBtn = document.getElementById('gh-water-btn');
+  const feedBtn = document.getElementById('gh-feed-btn');
+  if (waterBtn) {
+    waterBtn.disabled = state.points < 100;
+  }
+  if (feedBtn) {
+    feedBtn.disabled = state.points < 500;
+  }
 }

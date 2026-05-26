@@ -446,14 +446,12 @@ const BADGE_DEFINITIONS = [
     icon: '⚡',
     isSecret: true,
     condition: (state) => {
+      if (state.collected.length < 2) return false;
       const sorted = [...state.collected].sort((a, b) => new Date(a.date) - new Date(b.date));
-      for (let i = 1; i < sorted.length; i++) {
-        const diffSec = (new Date(sorted[i].date) - new Date(sorted[i-1].date)) / 1000;
-        if (diffSec > 0 && diffSec <= 30 && sorted[i].name !== sorted[i-1].name) {
-          return true;
-        }
-      }
-      return false;
+      const latest = sorted[sorted.length - 1];
+      const prev = sorted[sorted.length - 2];
+      const diffSec = (new Date(latest.date) - new Date(prev.date)) / 1000;
+      return diffSec > 0 && diffSec <= 30 && latest.name !== prev.name;
     }
   }
 ];

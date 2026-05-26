@@ -326,6 +326,54 @@
           <!-- Dynamically populated -->
         </div>
       </section>
+
+      <!-- SCREEN: GREENHOUSE (温室) -->
+      <section id="screen-greenhouse" class="app-screen">
+        <div class="greenhouse-header-bar">
+          <h2>ニャルドの温室</h2>
+          <div class="greenhouse-subtitle">不思議な世界樹の育成</div>
+        </div>
+
+        <div class="greenhouse-container">
+          <!-- Glasshouse Card -->
+          <div class="glasshouse-card">
+            <!-- Sun rays overlay -->
+            <div class="sun-rays"></div>
+            
+            <div class="wt-visual-container big">
+              <span id="gh-tree-emoji">🌱</span>
+            </div>
+            
+            <div class="wt-stats">
+              <div class="wt-level-badge" id="gh-level-title">🌳 不思議な世界樹 (Lv. 1)</div>
+              <div class="wt-stage-lbl" id="gh-stage-name">現在の形態: 【双葉の芽】</div>
+              
+              <div class="wt-exp-bar-container">
+                <div class="wt-exp-bar-fill" id="gh-exp-bar-fill" style="width: 0%"></div>
+              </div>
+              <div class="wt-exp-info">
+                <span>EXP</span>
+                <span id="gh-exp-text">0 / 100</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions Panel -->
+          <div class="greenhouse-actions-panel">
+            <h4>🌱 世界樹をお世話するニャ</h4>
+            <div class="wt-actions">
+              <button class="wt-btn" id="gh-water-btn">
+                💧 水やり
+                <span class="wt-btn-cost">🪙 100 pts (+10 EXP)</span>
+              </button>
+              <button class="wt-btn" id="gh-feed-btn">
+                ✨ 高級肥料
+                <span class="wt-btn-cost">🪙 500 pts (+60 EXP)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Bottom Navigation Bar -->
@@ -345,6 +393,10 @@
       <button class="nav-item" data-screen="badges">
         <span class="nav-icon">🏅</span>
         <span class="nav-lbl">バッジ</span>
+      </button>
+      <button class="nav-item" data-screen="greenhouse">
+        <span class="nav-icon">🌳</span>
+        <span class="nav-lbl">温室</span>
       </button>
     </nav>
   </div>
@@ -498,6 +550,16 @@
               <input type="checkbox" id="sound-toggle" checked>
               <span class="slider round"></span>
             </label>
+          </div>
+        </div>
+
+        <!-- Debug Section -->
+        <div class="settings-section" style="border-top: 1.5px dashed var(--color-border); padding-top: 15px;">
+          <h4>🔧 デバッグ機能 (開発用)</h4>
+          <p class="api-help-text">テスト用に所持ポイントを増やすことができるニャ！</p>
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button class="small-outline-btn" id="debug-add-1k-btn" style="flex: 1; border-color: var(--color-primary); color: var(--color-primary-dark); padding: 6px 12px;">+1,000 pts</button>
+            <button class="small-outline-btn" id="debug-add-10k-btn" style="flex: 1; border-color: var(--color-primary); color: var(--color-primary-dark); padding: 6px 12px;">+10,000 pts</button>
           </div>
         </div>
 
@@ -728,7 +790,6 @@
           <button class="shop-tab-btn active" data-tab="frames" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">🖼️ 枠</button>
           <button class="shop-tab-btn" data-tab="decos" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">📛 称号</button>
           <button class="shop-tab-btn" data-tab="themes" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">🎨 テーマ</button>
-          <button class="shop-tab-btn" data-tab="worldtree" style="flex: 1; padding: 8px 4px; font-size: 11px; border: none; background: none; font-weight: 700; color: var(--color-text-muted); cursor: pointer; border-radius: 4px; transition: background-color 0.2s;">🌳 温室</button>
         </div>
 
         <p id="shop-desc-text" style="font-size: 11.5px; color: var(--color-text-muted); margin-bottom: 12px; text-align: center; line-height: 1.4;">ポイントを消費して、図鑑の写真に飾れる可愛い「フォトフレーム」を交換できるニャ！<br>(※交換しても研究レベルは下がらないニャ！)</p>
