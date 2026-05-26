@@ -2596,6 +2596,71 @@ function renderGreenhouse() {
   syncBreedingPanel();
 }
 
+// 成長段階の絵文字を取得
+function getStageEmoji(stage, finalEmoji = '🌸') {
+  if (stage === 0) return '🌱'; // 種・二葉
+  if (stage === 1) return '🌿'; // 若葉
+  if (stage === 2) return '🪴'; // 茎・鉢植え
+  if (stage === 3) return '🍀'; // つぼみ前・大きい葉
+  return finalEmoji || '🌸';   // 開花
+}
+
+// 交配コントロールパネルの同期
+function syncBreedingPanel() {
+  const parent1El = document.getElementById('gh-breed-parent-1');
+  const parent2El = document.getElementById('gh-breed-parent-2');
+  const executeBtn = document.getElementById('gh-breed-execute-btn');
+
+  if (!parent1El || !parent2El || !executeBtn) return;
+
+  const slotId1 = selectedBreedSlots[0];
+  const slotId2 = selectedBreedSlots[1];
+
+  const slot1 = slotId1 ? state.ghSlots.find(s => s.slotId === slotId1) : null;
+  const slot2 = slotId2 ? state.ghSlots.find(s => s.slotId === slotId2) : null;
+
+  const spec1 = slot1 ? state.getPlantSpec(slot1.plantId) : null;
+  const spec2 = slot2 ? state.getPlantSpec(slot2.plantId) : null;
+
+  if (spec1) {
+    const inner = parent1El.querySelector('.gh-breed-slot-inner');
+    if (inner) {
+      inner.textContent = spec1.emoji;
+      inner.classList.add('selected');
+    }
+    const span = parent1El.querySelector('span');
+    if (span) span.textContent = spec1.name;
+  } else {
+    const inner = parent1El.querySelector('.gh-breed-slot-inner');
+    if (inner) {
+      inner.textContent = '❓';
+      inner.classList.remove('selected');
+    }
+    const span = parent1El.querySelector('span');
+    if (span) span.textContent = '親植物A';
+  }
+
+  if (spec2) {
+    const inner = parent2El.querySelector('.gh-breed-slot-inner');
+    if (inner) {
+      inner.textContent = spec2.emoji;
+      inner.classList.add('selected');
+    }
+    const span = parent2El.querySelector('span');
+    if (span) span.textContent = spec2.name;
+  } else {
+    const inner = parent2El.querySelector('.gh-breed-slot-inner');
+    if (inner) {
+      inner.textContent = '❓';
+      inner.classList.remove('selected');
+    }
+    const span = parent2El.querySelector('span');
+    if (span) span.textContent = '親植物B';
+  }
+
+  executeBtn.disabled = selectedBreedSlots.length !== 2;
+}
+
 // --------------------------------------------------------------------------
 // AdMob & Reward Ads Integration
 // --------------------------------------------------------------------------
