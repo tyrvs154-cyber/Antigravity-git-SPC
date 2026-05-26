@@ -25,10 +25,12 @@ const el = {
   // Header Stats
   totalPoints: document.getElementById('total-points-count'),
   userHeaderTitle: document.getElementById('header-title-display'),
+  headerLevelDisplay: document.getElementById('header-level-display'),
   
   // Home Screen Elements
   userLevel: document.getElementById('user-level-val'),
   userTitle: document.getElementById('user-title-val'),
+  homeTitleContainer: document.getElementById('home-title-container'),
   levelProgressBar: document.getElementById('level-progress-bar-fill'),
   levelProgressDetail: document.getElementById('level-progress-detail'),
   statCountCollected: document.getElementById('stat-count-collected'),
@@ -88,8 +90,13 @@ const el = {
   lightboxCloseBtn: document.getElementById('lightbox-close-btn'),
   lightboxImg: document.getElementById('lightbox-img'),
 
+  // Photo Frame Elements
+  detailFrameOverlay: document.getElementById('detail-frame-overlay'),
+  detailFrameSelect: document.getElementById('detail-frame-select'),
+
   // Badges Elements
   badgesContainer: document.getElementById('badges-grid-container'),
+  openShopBtn: document.getElementById('open-shop-btn'),
 
   // Result Modal Elements
   resultModalBackdrop: document.getElementById('result-modal-backdrop'),
@@ -122,12 +129,24 @@ const el = {
   soundToggle: document.getElementById('sound-toggle'),
   resetStateBtn: document.getElementById('reset-state-btn'),
 
+  // Title Select Modal Elements
+  titleSelectModalBackdrop: document.getElementById('title-select-modal-backdrop'),
+  titleSelectModalCloseBtn: document.getElementById('title-select-modal-close-btn'),
+  titleSelectList: document.getElementById('title-select-list'),
+
+  // Shop Modal Elements
+  shopModalBackdrop: document.getElementById('shop-modal-backdrop'),
+  shopModalCloseBtn: document.getElementById('shop-modal-close-btn'),
+  shopPointsCount: document.getElementById('shop-points-count'),
+  shopItemsGrid: document.getElementById('shop-items-grid'),
+
   // Level Up Elements
   levelupPopupBackdrop: document.getElementById('levelup-popup-backdrop'),
   lvlPopupOld: document.getElementById('lvl-popup-old'),
   lvlPopupNew: document.getElementById('lvl-popup-new'),
   lvlPopupTitle: document.getElementById('lvl-popup-title'),
-  levelupPopupCloseBtn: document.getElementById('levelup-popup-close-btn')
+  levelupPopupCloseBtn: document.getElementById('levelup-popup-close-btn'),
+  logoIconEmoji: document.getElementById('logo-icon-emoji')
 };
 
 // Current scanning session state
@@ -154,6 +173,8 @@ window.addEventListener('DOMContentLoaded', () => {
   setupCamera();
   setupZukan();
   setupBadges();
+  setupTitleSelector();
+  setupShop();
   setupLeafDrifts();
   
   // Random Nyan Home message
@@ -165,6 +186,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Initialize lightbox bindings
   setupLightbox();
+
+  // Initialize logo badge selector
+  setupLogoBadgeSelector();
 
   // Sound settings
   soundEnabled = el.soundToggle.checked;
@@ -247,8 +271,16 @@ function playClickSound() {
 // Main State Sync to UI
 // --------------------------------------------------------------------------
 function updateUI() {
-  // Update header points
+  // Update logo icon
+  if (el.logoIconEmoji) {
+    el.logoIconEmoji.textContent = state.logoIcon || '🌸';
+  }
+
+  // Update header points and level
   el.totalPoints.textContent = state.points;
+  if (el.headerLevelDisplay) {
+    el.headerLevelDisplay.textContent = `Lv. ${state.level}`;
+  }
   if (el.userHeaderTitle) {
     el.userHeaderTitle.textContent = state.getTitle();
   }
@@ -260,7 +292,7 @@ function updateUI() {
   // Progress Bar calculation
   const progress = state.getPointsProgress();
   el.levelProgressBar.style.width = `${progress.percentage}%`;
-  el.levelProgressDetail.textContent = `あと ${progress.totalNeeded - state.points} pts でレベルUPニャ`;
+  el.levelProgressDetail.textContent = `あと ${Math.max(0, progress.totalNeeded - state.cumulativePoints)} pts でレベルUPニャ`;
 
   // Quick stats card counts
   el.statCountCollected.textContent = state.collected.length;
@@ -593,7 +625,7 @@ async function processSnapshot() {
         presentAppraisalResult(aiResult, highRes);
       } catch (aiErr) {
         console.warn('AI analysis failed, falling back to local simulation:', aiErr);
-        alert(`AI鑑定エラーが発生したため、ニャン博士の記憶バンクで鑑定しますニャ！\n(${aiErr.message})`);
+        alert(`AI鑑定エラーが発生したため、ニャルド博士の記憶バンクで鑑定しますニャ！\n(${aiErr.message})`);
         runLocalAppraisal(highRes);
       }
     } else {
@@ -677,7 +709,8 @@ function presentAppraisalResult(plantResult, dataUrl) {
     description: plantResult.description || '特徴情報はありません。',
     catDoctorComment: plantResult.catDoctorComment || '元気に育っているニャ！',
     photo: dataUrl,
-    category: getPlantCategory(plantResult.name)
+    category: getPlantCategory(plantResult.name),
+    isNonPlant: !!plantResult.isNonPlant
   };
 
   // Populate Result modal details
@@ -762,6 +795,32 @@ el.registerPlantBtn.addEventListener('click', () => {
     activeScanResult.memo = el.resultMemoInput.value.trim();
   } else {
     activeScanResult.memo = '';
+  }
+
+  // Update scan streak stats
+  const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  if (!state.lastScanDate) {
+    state.currentStreak = 1;
+    state.longestStreak = 1;
+  } else {
+    const lastDate = new Date(state.lastScanDate);
+    const todayDate = new Date(todayStr);
+    const diffTime = todayDate - lastDate;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      state.currentStreak++;
+      state.longestStreak = Math.max(state.longestStreak, state.currentStreak);
+    } else if (diffDays > 1) {
+      state.currentStreak = 1;
+    }
+    // If diffDays is 0 (same day), keep the current streak as is
+  }
+  state.lastScanDate = todayStr;
+
+  // Update non-plant count
+  if (activeScanResult.isNonPlant) {
+    state.nonPlantScanCount++;
   }
 
   // Register plant in state
@@ -967,32 +1026,53 @@ function renderZukanGrid() {
     return;
   }
 
-  // Render cards
-  plantsToRender.forEach(item => {
+  // 4. Group by name to file duplicates together
+  const nameMap = new Map();
+  plantsToRender.forEach(p => {
+    const name = p.userInstance.name;
+    if (!nameMap.has(name)) {
+      nameMap.set(name, []);
+    }
+    nameMap.get(name).push(p.userInstance);
+  });
+
+  // Render grouped cards
+  nameMap.forEach((instances, name) => {
+    const representative = instances[0]; // Representative is the first sorted instance
     const card = document.createElement('div');
     card.className = 'zukan-card';
     
-    const imageSrc = item.userInstance.photo;
-    const displayRarity = item.userInstance.rarity;
+    const imageSrc = representative.photo;
+    const displayRarity = representative.rarity;
+    const fileCount = instances.length;
+    
+    const countBadgeHtml = fileCount > 1 
+      ? `<span class="zc-file-count-badge">📁 ${fileCount}</span>` 
+      : '';
+      
+    const frameClass = representative.frame && representative.frame !== 'none' ? `photo-frame-overlay frame-${representative.frame}` : '';
+    const frameOverlayHtml = frameClass ? `<div class="${frameClass}" style="border-radius: var(--border-radius-sm); border-width: 6px;"></div>` : '';
     
     card.innerHTML = `
-      <div class="zc-img-holder">
-        <img src="${imageSrc}" alt="${item.userInstance.name}" loading="lazy">
+      <div class="zc-img-holder" style="position: relative; overflow: hidden; border-radius: var(--border-radius-sm);">
+        <img src="${imageSrc}" alt="${name}" loading="lazy">
+        ${frameOverlayHtml}
         <span class="zc-badge ${displayRarity}">${displayRarity}</span>
+        ${countBadgeHtml}
       </div>
       <div class="zc-info">
-        <div class="zc-name">${item.userInstance.name}</div>
-        <div class="zc-scientific">${item.userInstance.scientificName}</div>
+        <div class="zc-name">${name}</div>
+        <div class="zc-scientific">${representative.scientificName}</div>
         <div class="zc-meta">
-          <span>${formatDate(item.userInstance.date)}</span>
-          <span class="zc-pts">${item.userInstance.totalScore} pts</span>
+          <span>${formatDate(representative.date)}</span>
+          <span class="zc-pts">${representative.totalScore} pts</span>
         </div>
       </div>
     `;
 
     card.addEventListener('click', () => {
       playClickSound();
-      showZukanDetail(item.userInstance);
+      showZukanDetail(instances);
     });
 
     el.zukanGrid.appendChild(card);
@@ -1004,25 +1084,111 @@ function formatDate(isoString) {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function showZukanDetail(userInstance) {
-  el.detailPlantImg.src = userInstance.photo;
-  el.detailRarityBadge.textContent = userInstance.rarity;
-  el.detailRarityBadge.className = `detail-rarity-badge ${userInstance.rarity}`;
-  
-  el.detailPlantName.textContent = userInstance.name;
-  el.detailPlantScientific.textContent = userInstance.scientificName;
-  el.detailCollectDate.textContent = `発見日: ${formatDate(userInstance.date)}`;
-  
-  el.detailPtRarity.textContent = `+${userInstance.rarityScore}`;
-  el.detailPtBeauty.textContent = `+${userInstance.beautyScore}`;
-  el.detailPtFame.textContent = `+${userInstance.fameScore}`;
-  el.detailPtTotal.textContent = `${userInstance.totalScore} pts`;
-  
-  el.detailPlantDesc.textContent = userInstance.description;
-  el.detailPlantComment.textContent = userInstance.catDoctorComment;
+function showZukanDetail(instances) {
+  if (!instances || instances.length === 0) return;
 
-  // Custom user memo display
-  el.detailPlantMemo.textContent = userInstance.memo || 'メモはありませんニャ。';
+  let activeIndex = 0;
+  const selectContainer = document.getElementById('detail-instance-select-container');
+  const selectElement = document.getElementById('detail-instance-select');
+
+  // Populate photo frame dropdown choices based on unlocked state
+  if (el.detailFrameSelect) {
+    el.detailFrameSelect.innerHTML = '<option value="none">なし</option>';
+    SHOP_FRAMES.forEach(frame => {
+      if (state.unlockedFrames.includes(frame.id)) {
+        const opt = document.createElement('option');
+        opt.value = frame.id;
+        opt.textContent = frame.name;
+        el.detailFrameSelect.appendChild(opt);
+      }
+    });
+  }
+
+  const updateActiveInstanceDisplay = (idx) => {
+    activeIndex = idx;
+    const userInstance = instances[activeIndex];
+
+    el.detailPlantImg.src = userInstance.photo;
+    el.detailRarityBadge.textContent = userInstance.rarity;
+    el.detailRarityBadge.className = `detail-rarity-badge ${userInstance.rarity}`;
+    
+    el.detailPlantName.textContent = userInstance.name;
+    el.detailPlantScientific.textContent = userInstance.scientificName;
+    el.detailCollectDate.textContent = `発見日: ${formatDate(userInstance.date)}`;
+    
+    el.detailPtRarity.textContent = `+${userInstance.rarityScore}`;
+    el.detailPtBeauty.textContent = `+${userInstance.beautyScore}`;
+    el.detailPtFame.textContent = `+${userInstance.fameScore}`;
+    el.detailPtTotal.textContent = `${userInstance.totalScore} pts`;
+    
+    el.detailPlantDesc.textContent = userInstance.description;
+    el.detailPlantComment.textContent = userInstance.catDoctorComment;
+
+    // Custom user memo display
+    el.detailPlantMemo.textContent = userInstance.memo || 'メモはありませんニャ。';
+    el.detailPlantMemoTextarea.value = userInstance.memo || '';
+
+    // Update photo frame overlay and selection dropdown state
+    const appliedFrame = userInstance.frame || 'none';
+    if (el.detailFrameOverlay) {
+      el.detailFrameOverlay.className = 'photo-frame-overlay';
+      if (appliedFrame !== 'none') {
+        el.detailFrameOverlay.classList.add(`frame-${appliedFrame}`);
+      }
+    }
+    if (el.detailFrameSelect) {
+      el.detailFrameSelect.value = appliedFrame;
+    }
+  };
+
+  // Setup instances select dropdown
+  if (instances.length > 1) {
+    selectContainer.style.display = 'block';
+    selectElement.innerHTML = '';
+    instances.forEach((inst, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = `${formatDate(inst.date)} - 査定: ${inst.totalScore} pts`;
+      selectElement.appendChild(opt);
+    });
+    selectElement.value = activeIndex;
+  } else {
+    selectContainer.style.display = 'none';
+  }
+
+  // Initial draw
+  updateActiveInstanceDisplay(0);
+
+  // Dropdown switch event
+  const newSelect = selectElement.cloneNode(true);
+  selectElement.parentNode.replaceChild(newSelect, selectElement);
+  newSelect.addEventListener('change', (e) => {
+    updateActiveInstanceDisplay(parseInt(e.target.value, 10));
+  });
+
+  // Photo frame select switch event listener
+  if (el.detailFrameSelect) {
+    const newFrameSelect = el.detailFrameSelect.cloneNode(true);
+    el.detailFrameSelect.parentNode.replaceChild(newFrameSelect, el.detailFrameSelect);
+    el.detailFrameSelect = newFrameSelect;
+    el.detailFrameSelect.addEventListener('change', (e) => {
+      const frameId = e.target.value;
+      const userInstance = instances[activeIndex];
+      state.updatePlantFrame(userInstance.id, frameId);
+      userInstance.frame = frameId;
+      
+      // Update local overlay visual
+      if (el.detailFrameOverlay) {
+        el.detailFrameOverlay.className = 'photo-frame-overlay';
+        if (frameId !== 'none') {
+          el.detailFrameOverlay.classList.add(`frame-${frameId}`);
+        }
+      }
+      
+      // Refresh grid cards to display the updated photo frame decoration
+      renderZukanGrid();
+    });
+  }
 
   // Reset edit modes
   el.detailMemoDisplayMode.style.display = 'block';
@@ -1048,7 +1214,7 @@ function showZukanDetail(userInstance) {
     if (el.detailMemoDisplayMode.style.display !== 'none') {
       el.detailMemoDisplayMode.style.display = 'none';
       el.detailMemoEditMode.style.display = 'flex';
-      el.detailPlantMemoTextarea.value = userInstance.memo || '';
+      el.detailPlantMemoTextarea.value = instances[activeIndex].memo || '';
       el.detailMemoEditBtn.textContent = 'キャンセル';
     } else {
       el.detailMemoDisplayMode.style.display = 'block';
@@ -1060,11 +1226,12 @@ function showZukanDetail(userInstance) {
   // Hook up save button
   el.detailMemoSaveBtn.addEventListener('click', () => {
     playClickSound();
+    const activeInstance = instances[activeIndex];
     const newMemoText = el.detailPlantMemoTextarea.value.trim();
-    state.updatePlantMemo(userInstance.id, newMemoText);
+    state.updatePlantMemo(activeInstance.id, newMemoText);
     
     // Update local reference
-    userInstance.memo = newMemoText;
+    activeInstance.memo = newMemoText;
     el.detailPlantMemo.textContent = newMemoText || 'メモはありませんニャ。';
     
     // Switch back to display
@@ -1079,19 +1246,274 @@ function showZukanDetail(userInstance) {
   // Hook up delete button
   el.detailPlantDeleteBtn.addEventListener('click', () => {
     playClickSound();
+    const activeInstance = instances[activeIndex];
     if (confirm('この写真の記録を完全に削除してよろしいニャ？\n(獲得したポイントも引かれるニャ)')) {
-      const result = state.removePlant(userInstance.id);
+      const result = state.removePlant(activeInstance.id);
       if (result) {
-        el.zukanDetailBackdrop.style.display = 'none';
+        instances.splice(activeIndex, 1);
+        alert('図鑑から登録を削除したニャ！');
+        
         updateUI();
         renderZukanGrid();
-        alert('図鑑から登録を削除したニャ！');
+
+        if (instances.length > 0) {
+          newSelect.innerHTML = '';
+          instances.forEach((inst, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = `${formatDate(inst.date)} - 査定: ${inst.totalScore} pts`;
+            newSelect.appendChild(opt);
+          });
+          newSelect.value = 0;
+          if (instances.length === 1) {
+            selectContainer.style.display = 'none';
+          }
+          updateActiveInstanceDisplay(0);
+        } else {
+          el.zukanDetailBackdrop.style.display = 'none';
+        }
       }
     }
   });
 
   el.zukanDetailBackdrop.style.display = 'flex';
 }
+
+// --------------------------------------------------------------------------
+// Logo Badge Select Handler
+// --------------------------------------------------------------------------
+function setupLogoBadgeSelector() {
+  const logoBtn = document.getElementById('header-logo-btn');
+  const logoEmoji = document.getElementById('logo-icon-emoji');
+  const modal = document.getElementById('logo-badge-modal-backdrop');
+  const closeBtn = document.getElementById('logo-badge-modal-close-btn');
+  const grid = document.getElementById('logo-badge-select-grid');
+
+  if (!logoBtn || !logoEmoji || !modal || !closeBtn || !grid) return;
+
+  logoEmoji.textContent = state.logoIcon || '🌸';
+
+  logoBtn.addEventListener('click', () => {
+    playClickSound();
+    grid.innerHTML = '';
+
+    // Add default badge
+    const defaultBadge = document.createElement('div');
+    defaultBadge.className = 'logo-badge-option';
+    defaultBadge.style.cssText = 'font-size: 32px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2.5px solid var(--color-border); background-color: var(--color-card-white); cursor: pointer; transition: transform 0.2s;';
+    defaultBadge.textContent = '🌸';
+    if (state.logoIcon === '🌸' || !state.logoIcon) {
+      defaultBadge.style.borderColor = 'var(--color-primary)';
+      defaultBadge.style.backgroundColor = 'var(--color-primary-light)';
+    }
+    defaultBadge.addEventListener('click', () => {
+      playClickSound();
+      state.setLogoIcon('🌸');
+      logoEmoji.textContent = '🌸';
+      modal.style.display = 'none';
+    });
+    grid.appendChild(defaultBadge);
+
+    // Render earned badges
+    const defs = getBadgeDefinitions();
+    defs.forEach(badgeDef => {
+      const isUnlocked = state.badges.includes(badgeDef.id);
+      const badgeOpt = document.createElement('div');
+      badgeOpt.className = 'logo-badge-option' + (isUnlocked ? '' : ' locked');
+      badgeOpt.style.cssText = 'font-size: 32px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2.5px solid var(--color-border); background-color: var(--color-card-white); cursor: pointer; transition: transform 0.2s;';
+
+      if (!isUnlocked) {
+        badgeOpt.textContent = '🔒';
+        badgeOpt.style.opacity = '0.4';
+        badgeOpt.style.cursor = 'not-allowed';
+      } else {
+        badgeOpt.textContent = badgeDef.icon;
+        if (state.logoIcon === badgeDef.icon) {
+          badgeOpt.style.borderColor = 'var(--color-primary)';
+          badgeOpt.style.backgroundColor = 'var(--color-primary-light)';
+        }
+        badgeOpt.addEventListener('click', () => {
+          playClickSound();
+          state.setLogoIcon(badgeDef.icon);
+          logoEmoji.textContent = badgeDef.icon;
+          modal.style.display = 'none';
+        });
+      }
+      grid.appendChild(badgeOpt);
+    });
+
+    modal.style.display = 'flex';
+  });
+
+  closeBtn.addEventListener('click', () => {
+    playClickSound();
+    modal.style.display = 'none';
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+}
+
+// --------------------------------------------------------------------------
+// Title Selector Handler
+// --------------------------------------------------------------------------
+function setupTitleSelector() {
+  const openHeaderTitle = el.userHeaderTitle;
+  const openHomeTitle = el.homeTitleContainer;
+  const modal = el.titleSelectModalBackdrop;
+  const closeBtn = el.titleSelectModalCloseBtn;
+  const list = el.titleSelectList;
+
+  if (!modal || !closeBtn || !list) return;
+
+  const renderTitleList = () => {
+    list.innerHTML = '';
+    const availableTitles = state.getAvailableTitles();
+
+    // Default option
+    const defaultItem = document.createElement('div');
+    defaultItem.className = 'title-option-item' + (!state.customTitle ? ' active' : '');
+    defaultItem.innerHTML = `
+      <span class="title-option-text">（デフォルトの称号）</span>
+      <span class="title-option-level">自動適用</span>
+    `;
+    defaultItem.addEventListener('click', () => {
+      playClickSound();
+      state.setCustomTitle('');
+      updateUI();
+      modal.style.display = 'none';
+    });
+    list.appendChild(defaultItem);
+
+    availableTitles.forEach((title, idx) => {
+      const isSelected = state.customTitle === title;
+      const item = document.createElement('div');
+      item.className = 'title-option-item' + (isSelected ? ' active' : '');
+      item.innerHTML = `
+        <span class="title-option-text">${title}</span>
+        <span class="title-option-level">Lv. ${idx + 1}</span>
+      `;
+      item.addEventListener('click', () => {
+        playClickSound();
+        state.setCustomTitle(title);
+        updateUI();
+        modal.style.display = 'none';
+      });
+      list.appendChild(item);
+    });
+  };
+
+  const openModal = () => {
+    playClickSound();
+    renderTitleList();
+    modal.style.display = 'flex';
+  };
+
+  if (openHeaderTitle) openHeaderTitle.addEventListener('click', openModal);
+  if (openHomeTitle) openHomeTitle.addEventListener('click', openModal);
+
+  closeBtn.addEventListener('click', () => {
+    playClickSound();
+    modal.style.display = 'none';
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+}
+
+// --------------------------------------------------------------------------
+// shop (ニャルドショップ) Handler
+// --------------------------------------------------------------------------
+const SHOP_FRAMES = [
+  { id: 'wood', name: 'ナチュラルウッド', desc: '温かみのある本格的な木製枠', cost: 1500, emoji: '🪵' },
+  { id: 'paw', name: 'にゃんこ肉球', desc: '可愛い猫の足跡がいっぱいの枠', cost: 2000, emoji: '🐾' },
+  { id: 'sakura', name: 'サクラ舞うピンク', desc: 'ひらひらサクラが舞うお洒落な枠', cost: 3000, emoji: '🌸' },
+  { id: 'gold', name: 'ロイヤルゴールド', desc: 'キラキラ輝く豪華な黄金の枠', cost: 5000, emoji: '👑' }
+];
+
+function setupShop() {
+  const modal = el.shopModalBackdrop;
+  const closeBtn = el.shopModalCloseBtn;
+  const openBtn = el.openShopBtn;
+  const pointsCount = el.shopPointsCount;
+  const grid = el.shopItemsGrid;
+
+  if (!modal || !closeBtn || !grid) return;
+
+  const renderShopItems = () => {
+    grid.innerHTML = '';
+    pointsCount.textContent = state.points;
+
+    SHOP_FRAMES.forEach(item => {
+      const isUnlocked = state.unlockedFrames.includes(item.id);
+      const canAfford = state.points >= item.cost;
+
+      const card = document.createElement('div');
+      card.className = 'shop-item-card' + (isUnlocked ? ' purchased' : '');
+
+      let actionHtml = '';
+      if (isUnlocked) {
+        actionHtml = `<button class="shop-buy-btn purchased" disabled>交換済み</button>`;
+      } else {
+        actionHtml = `<button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${item.id}">
+          🪙 ${item.cost} pts
+        </button>`;
+      }
+
+      card.innerHTML = `
+        <div class="shop-item-info">
+          <div class="shop-item-name">${item.emoji} ${item.name}</div>
+          <div class="shop-item-desc">${item.desc}</div>
+        </div>
+        <div class="shop-item-action">
+          ${actionHtml}
+        </div>
+      `;
+
+      if (!isUnlocked && canAfford) {
+        const btn = card.querySelector('.shop-buy-btn');
+        btn.addEventListener('click', () => {
+          playClickSound();
+          if (confirm(`【${item.name}】を ${item.cost} pts で交換するニャ？\n(消費しても研究レベルは下がりません)`)) {
+            state.spendPoints(item.cost);
+            state.unlockFrame(item.id);
+            alert(`🎉【${item.name}】のフォトフレームを解放したニャ！\n図鑑の詳細から写真に適用できるニャ！`);
+            renderShopItems();
+            updateUI();
+          }
+        });
+      }
+
+      grid.appendChild(card);
+    });
+  };
+
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      playClickSound();
+      renderShopItems();
+      modal.style.display = 'flex';
+    });
+  }
+
+  closeBtn.addEventListener('click', () => {
+    playClickSound();
+    modal.style.display = 'none';
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+}
+
 
 // --------------------------------------------------------------------------
 // Achievements (バッジ) Screen
@@ -1119,15 +1541,19 @@ function renderBadgesGrid() {
       
       const badgeDef = defs[idx];
       const isUnlocked = state.badges.includes(badgeDef.id);
+      const isSecret = badgeDef.isSecret && !isUnlocked;
       
       const badgeItem = document.createElement('div');
       badgeItem.className = `badge-item-container ${isUnlocked ? 'unlocked' : 'locked'}`;
       
+      const displayIcon = isSecret ? '❓' : badgeDef.icon;
+      const displayName = isSecret ? '？？？' : badgeDef.name;
+      
       badgeItem.innerHTML = `
         <div class="badge-circle">
-          ${badgeDef.icon}
+          ${displayIcon}
         </div>
-        <div class="badge-name">${badgeDef.name}</div>
+        <div class="badge-name">${displayName}</div>
       `;
       
       badgeItem.addEventListener('click', () => {
@@ -1135,7 +1561,11 @@ function renderBadgesGrid() {
         if (isUnlocked) {
           alert(`🏅【${badgeDef.name}】獲得！\n\n『${badgeDef.description}』`);
         } else {
-          alert(`🔒【${badgeDef.name}】(未獲得)\n\n条件: ${badgeDef.description}`);
+          if (badgeDef.isSecret) {
+            alert(`🔒【？？？】(未獲得)\n\n条件: ？？？`);
+          } else {
+            alert(`🔒【${badgeDef.name}】(未獲得)\n\n条件: ${badgeDef.description}`);
+          }
         }
       });
       

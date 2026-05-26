@@ -19,13 +19,16 @@
     
     <!-- Top Header -->
     <header class="app-header">
-      <div class="header-logo">
-        <span class="logo-icon">🌸</span>
+      <div class="header-logo" id="header-logo-btn" style="cursor: pointer;" title="ロゴバッジを変更">
+        <span class="logo-icon" id="logo-icon-emoji">🌸</span>
         <h1 class="logo-title">はなみっけ</h1>
       </div>
       <div class="header-right">
         <div class="header-stats-wrapper">
-          <div class="header-title-badge" id="header-title-display">たまご学者ニャ</div>
+          <div class="header-badge-row" style="display: flex; gap: 4px; align-items: center; justify-content: flex-end; width: 100%;">
+            <div class="header-level-badge" id="header-level-display">Lv. 1</div>
+            <div class="header-title-badge" id="header-title-display" style="cursor: pointer;" title="称号を変更">たまご学者ニャ</div>
+          </div>
           <div class="point-badge" id="header-points-display">
             <span class="coin-icon">🪙</span>
             <span class="point-value" id="total-points-count">0</span>
@@ -114,7 +117,7 @@
               <span class="lvl-lbl">研究レベル</span>
               <span class="lvl-val" id="user-level-val">1</span>
             </div>
-            <div class="title-info">
+            <div class="title-info" id="home-title-container" style="cursor: pointer;" title="称号を変更">
               <span class="title-lbl">称号:</span>
               <span class="title-val" id="user-title-val">たまご学者</span>
             </div>
@@ -163,7 +166,7 @@
           </div>
           <div class="cta-content">
             <h3>さっそく街へ出て植物を探そう！</h3>
-            <p>カメラで撮るだけで、ニャン博士が鑑定してポイントをつけてくれるニャ！</p>
+            <p>カメラで撮るだけで、ニャルド博士が鑑定してポイントをつけてくれるニャ！</p>
             <button class="cta-button" id="home-start-scan-btn">
               <span class="btn-icon">📷</span>植物をみっける！
             </button>
@@ -262,7 +265,7 @@
               <span class="loading-paw">🐾</span>
               <span class="loading-glass">🔍</span>
             </div>
-            <h4>ニャン博士が鑑定中ニャ…</h4>
+            <h4>ニャルド博士が鑑定中ニャ…</h4>
             <p>写真の特徴を調べているから、ちょっと待つニャ！</p>
             <div class="loading-bar-container">
               <div class="loading-bar-fill"></div>
@@ -311,9 +314,12 @@
 
       <!-- SCREEN: BADGES (バッジ) -->
       <section id="screen-badges" class="app-screen">
-        <div class="badges-header-bar">
-          <h2>研究バッジ</h2>
-          <p>植物を研究して、ニャン博士から勲章をもらうニャ！</p>
+        <div class="badges-header-bar" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h2>研究バッジ</h2>
+            <button class="small-outline-btn" id="open-shop-btn" style="border-color: var(--color-primary); color: var(--color-primary-dark); padding: 6px 12px; display: flex; align-items: center; gap: 4px;">🛍️ ショップ</button>
+          </div>
+          <p>植物を研究して、ニャルド博士から勲章をもらうニャ！</p>
         </div>
 
         <div class="badges-container" id="badges-grid-container">
@@ -408,7 +414,7 @@
           </div>
           <div class="comment-bubble">
             <div class="cb-arrow"></div>
-            <h5>ニャン博士の鑑定コメント:</h5>
+            <h5>ニャルド博士の鑑定コメント:</h5>
             <p id="result-nyan-speech">よく見かける植物ニャ！緑が綺麗であるニャ。</p>
           </div>
         </div>
@@ -538,8 +544,9 @@
       <button class="sheet-close-btn" id="zukan-detail-close-btn" aria-label="閉じる">✕</button>
       
       <div class="sheet-scroll-content">
-        <div class="sheet-hero">
-          <img id="detail-plant-img" src="" alt="植物写真">
+        <div class="sheet-hero" id="detail-photo-wrapper" style="position: relative; overflow: hidden; border-radius: var(--border-radius-md);">
+          <img id="detail-plant-img" src="" alt="植物写真" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+          <div class="photo-frame-overlay" id="detail-frame-overlay"></div>
           <span class="detail-rarity-badge" id="detail-rarity-badge">Common</span>
         </div>
         
@@ -548,7 +555,20 @@
             <h3 id="detail-plant-name">シロツメクサ</h3>
             <span id="detail-plant-scientific">Trifolium repens</span>
           </div>
-          <div class="detail-collect-date" id="detail-collect-date">
+          <!-- 登録履歴切り替え用ドロップダウン -->
+          <div class="detail-instance-select-container" id="detail-instance-select-container" style="margin-top: 10px; display: none;">
+            <span style="font-size: 11px; color: var(--color-text-muted);">📁 登録履歴の切り替え:</span>
+            <select id="detail-instance-select" class="sort-select" style="width: 100%; height: 36px; padding: 0 8px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); font-size: 12px; margin-top: 4px; color: var(--color-text-dark); background-color: var(--color-card-white);">
+            </select>
+          </div>
+          <!-- フォトフレーム設定用ドロップダウン -->
+          <div class="detail-frame-select-container" id="detail-frame-select-container" style="margin-top: 10px;">
+            <span style="font-size: 11px; color: var(--color-text-muted);">🖼️ フォトフレームの適用:</span>
+            <select id="detail-frame-select" class="sort-select" style="width: 100%; height: 36px; padding: 0 8px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); font-size: 12px; margin-top: 4px; color: var(--color-text-dark); background-color: var(--color-card-white);">
+              <option value="none">なし</option>
+            </select>
+          </div>
+          <div class="detail-collect-date" id="detail-collect-date" style="margin-top: 8px;">
             登録日: 2026-05-26
           </div>
         </div>
@@ -601,7 +621,7 @@
         <div class="sheet-comment-card">
           <div class="comment-author">
             <div class="author-avatar">😺</div>
-            <h5>ニャン博士の鑑定コメント</h5>
+            <h5>ニャルド博士の鑑定コメント</h5>
           </div>
           <div class="comment-speech">
             <p id="detail-plant-comment">コメントがここに入りますニャ。</p>
@@ -618,11 +638,67 @@
     </div>
   </div>
 
+  <!-- LOGO BADGE SELECT MODAL -->
+  <div class="settings-backdrop" id="logo-badge-modal-backdrop" style="display: none; z-index: 300;">
+    <div class="settings-modal" style="max-height: 60%; width: 90%; max-width: 380px;">
+      <div class="settings-header">
+        <h3>🏅 ロゴバッジの変更</h3>
+        <button class="settings-close-btn" id="logo-badge-modal-close-btn">✕</button>
+      </div>
+      <div class="settings-scroll-content" style="padding: 20px;">
+        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px; line-height: 1.5; text-align: center;">獲得した研究バッジや、初期バッジの中から好きなものをロゴマークに設定できるニャ！</p>
+        <div class="badge-select-grid" id="logo-badge-select-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center; padding-bottom: 20px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- LIGHTBOX MODAL (For enlarging Zukan photos) -->
   <div class="lightbox-backdrop" id="lightbox-modal-backdrop">
     <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="閉じる">✕</button>
     <div class="lightbox-content">
       <img id="lightbox-img" src="" alt="拡大画像">
+    </div>
+  </div>
+
+  <!-- TITLE SELECT MODAL -->
+  <div class="settings-backdrop" id="title-select-modal-backdrop" style="display: none; z-index: 300;">
+    <div class="settings-modal" style="max-height: 70%; width: 90%; max-width: 380px;">
+      <div class="settings-header">
+        <h3>🎓 称号の変更</h3>
+        <button class="settings-close-btn" id="title-select-modal-close-btn">✕</button>
+      </div>
+      <div class="settings-scroll-content" style="padding: 20px;">
+        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 15px; line-height: 1.5; text-align: center;">これまでに到達したレベルでアンロックされた称号から、好きなものを設定できるニャ！</p>
+        <div class="title-select-list" id="title-select-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NYAN SHOP MODAL -->
+  <div class="settings-backdrop" id="shop-modal-backdrop" style="display: none; z-index: 300;">
+    <div class="settings-modal" style="max-height: 80%; width: 90%; max-width: 400px;">
+      <div class="settings-header">
+        <h3>🛍️ ニャルドショップ</h3>
+        <button class="settings-close-btn" id="shop-modal-close-btn">✕</button>
+      </div>
+      <div class="settings-scroll-content" style="padding: 15px;">
+        <div class="shop-points-banner" style="background-color: var(--color-primary-light); padding: 12px; border-radius: var(--border-radius-sm); display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border: 1.5px solid var(--color-primary); width: 100%;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--color-primary-dark);">現在の所持ポイント:</span>
+          <div class="point-badge" style="box-shadow: none; padding: 2.5px 10px; display: flex; align-items: center; gap: 6px;">
+            <span class="coin-icon">🪙</span>
+            <span class="point-value" id="shop-points-count">0</span>
+            <span class="point-unit">pts</span>
+          </div>
+        </div>
+        <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 15px; text-align: center; line-height: 1.4;">ポイントを消費して、図鑑の写真に飾れる可愛い「フォトフレーム」を交換できるニャ！<br>(※交換しても研究レベルは下がらないニャ！)</p>
+        <div class="shop-items-grid" id="shop-items-grid" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
     </div>
   </div>
 

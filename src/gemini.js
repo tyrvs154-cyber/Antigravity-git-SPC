@@ -21,10 +21,10 @@ export async function analyzePlantImage(base64DataWithPrefix, apiKey, model = 'g
   const base64Data = matches[2];
 
   const systemInstruction = 
-    "あなたは「ニャン博士（Dr. Nyan）」という名前の、ふくよかな白衣を着た猫の植物学者です。 " +
+    "あなたは「ニャルド博士（Dr. Nyan）」という名前の、ふくよかな白衣を着た猫の植物学者です。 " +
     "語尾に「〜ニャ」「〜であるニャ」「〜ニャん」を使い、温厚で博識、かつ少しチャーミングな話し方をします。 " +
     "送られてきた植物の写真を詳細に鑑定し、その植物の名前、学名、特徴、およびレア度・美しさ・有名度によるポイント査定と、 " +
-    "ニャン博士としての愛らしい講評を返してください。";
+    "ニャルド博士としての愛らしい講評を返してください。";
 
   // Request body with schema definition for JSON mode
   const requestBody = {
@@ -32,7 +32,7 @@ export async function analyzePlantImage(base64DataWithPrefix, apiKey, model = 'g
       {
         parts: [
           {
-            text: "この写真の植物を鑑定してください。もし完全に植物ではない写真（人物、動物、機械、日用品など）が送られてきた場合は、その写っている対象の特徴を捉えて、ユーモアたっぷりに何らかのユニークな植物（架空の植物、あるいは見た目や機能が似ている実在の植物）に見立てて鑑定してください（例：猫の写真なら『モフモフ猫じゃらし草』、キーボードなら『黒檀タイピング樹』など）。そして写真の対象にちなんだニャン博士らしいクスッと笑える面白い解説や講評コメント（語尾は〜ニャ、〜であるニャを徹底）を返してください。ただし、本物の植物ではないため、鑑定ポイント査定はすべて低め（レア度、美しさ、有名度はそれぞれ10pts前後に抑え、合計で20pts〜45pts程度）に低スコアを設定してください。"
+            text: "この写真の植物を鑑定してください。もし完全に植物ではない写真（人物、動物、機械、日用品など）が送られてきた場合は、その写っている対象の特徴を捉えて、ユーモアたっぷりに何らかのユニークな植物（架空の植物、あるいは見た目や機能が似ている実在の植物）に見立てて鑑定してください（例：猫の写真なら『モフモフ猫じゃらし草』、キーボードなら『黒檀タイピング樹』など）。そして写真の対象にちなんだニャルド博士らしいクスッと笑える面白い解説や講評コメント（語尾は〜ニャ、〜であるニャを徹底）を返してください。ただし、本物の植物ではないため、鑑定ポイント査定はすべて低め（レア度、美しさ、有名度はそれぞれ10pts前後に抑え、合計で20pts〜45pts程度）に低スコアを設定してください。"
           },
           {
             inlineData: {
@@ -86,10 +86,14 @@ export async function analyzePlantImage(base64DataWithPrefix, apiKey, model = 'g
           },
           catDoctorComment: { 
             type: "STRING", 
-            description: "ニャン博士としての鑑定コメント。語尾は『〜ニャ』『〜であるニャ』などを徹底してください（日本語・80文字程度）" 
+            description: "ニャルド博士としての鑑定コメント。語尾は『〜ニャ』『〜であるニャ』などを徹底してください（日本語・80文字程度）" 
+          },
+          isNonPlant: {
+            type: "BOOLEAN",
+            description: "送られた写真が植物ではない写真（人物、動物、機械、日用品など）であり、おちゃめに植物に見立てて鑑定している場合は true、本物の植物として鑑定している場合は false"
           }
         },
-        required: ["name", "scientificName", "rarity", "rarityScore", "beautyScore", "fameScore", "description", "catDoctorComment"]
+        required: ["name", "scientificName", "rarity", "rarityScore", "beautyScore", "fameScore", "description", "catDoctorComment", "isNonPlant"]
       }
     }
   };

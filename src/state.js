@@ -6,7 +6,7 @@ const TITLES = [
   "たまご学者ニャ", "よちよち草つみ", "ひよっこ植物学者", "雑草のおともだち", "みならい助手ニャ",
   "双葉の観察者", "本葉のウォッチャー", "つぼみ見守り隊", "お散歩植物部", "一人前のアシスタント",
   "どんぐりコロコロ隊", "たんぽぽ綿毛ふぅーっ！", "クローバー探し隊", "はっぱのささやきスト", "はっぱのマイフレンド",
-  "アロエのぷにぷに愛好家", "サボテンの語り部", "お花のティータイム", "つる草クライマー", "ニャン博士の右腕ニャ",
+  "アロエのぷにぷに愛好家", "サボテンの語り部", "お花のティータイム", "つる草クライマー", "ニャルド博士の右腕ニャ",
   "すみれの応援団", "ひまわりの追跡者", "あじさいグラデーション", "さくらの追っかけ", "紅葉ハンター",
   "カサコソ落ち葉ダンス", "苔むす小道の探検家", "シダの葉幾何学者", "つくしと背比べニャ", "なかよしグリーンバディ",
   "球根のまほうつかい", "接ぎ木のチャレンジャー", "挿し木の見守り手", "水やり皆勤賞ニャ", "日当たりチェッカー",
@@ -21,11 +21,12 @@ const TITLES = [
   "新種発見ドリーマー", "絶滅危惧種のまもりびと", "植物化石のトレジャーハンター", "太古の巨大シダロマン", "栄誉ある特別研究員ニャ",
   "四つ葉のクローバー錬金術師", "七草がゆのシェフニャ", "漢方生薬のやさしいアドバイザー", "アロマテラピーの伝道師", "ドライフラワーの芸術家",
   "盆栽の小さな宇宙", "庭園デザインの巨匠", "グリーンインフラの設計士", "宇宙ステーションの宇宙農家", "伝説のグリーンサムニャ",
-  "世界樹のハッピーガーディアン", "賢者の石とひまわりの種", "ニャン博士の一番弟子ニャ", "ニャン博士のライバル学者", "ニャン博士の共同研究者",
+  "世界樹のハッピーガーディアン", "賢者の石とひまわりの種", "ニャルド博士の一番弟子ニャ", "ニャルド博士のライバル学者", "ニャルド博士の共同研究者",
   "猫界のリンネ先生", "偉大なる緑の導き手", "語り継がれる植物の友ニャ", "究極のニャスター学者", "伝説の植物ニャスター"
 ];
 
 const BADGE_DEFINITIONS = [
+  // 1. 収集数シリーズ
   {
     id: 'first_plant',
     name: 'はじめの一歩',
@@ -34,49 +35,425 @@ const BADGE_DEFINITIONS = [
     condition: (state) => state.collected.length >= 1
   },
   {
-    id: 'plant_collector',
+    id: 'collector_mid',
     name: '緑のなかまたち',
     description: '植物を5種類以上集めたニャ！',
     icon: '🍀',
     condition: (state) => state.collected.length >= 5
   },
   {
-    id: 'rare_finder',
-    name: '奇跡の出会い',
+    id: 'collector_max',
+    name: '植物の大家族',
+    description: '植物を15種類以上集めた偉大な発見者ニャ！',
+    icon: '🏡',
+    condition: (state) => state.collected.length >= 15
+  },
+
+  // 2. レア度シリーズ
+  {
+    id: 'rare_bronze',
+    name: '珍しい発見',
     description: 'レア（Rare）以上の植物を発見した！',
     icon: '✨',
     condition: (state) => state.collected.some(p => p.rarity === 'Rare' || p.rarity === 'Legendary')
   },
   {
-    id: 'point_rich',
-    name: '一流コレクター',
-    description: '累計ポイントが500点を超えた！',
-    icon: '🪙',
-    condition: (state) => state.points >= 500
+    id: 'rare_silver',
+    name: '伝説の目撃者',
+    description: 'レジェンダリー（Legendary）の植物を発見した！',
+    icon: '💫',
+    condition: (state) => state.collected.some(p => p.rarity === 'Legendary')
   },
   {
-    id: 'point_master',
-    name: 'ニャスター学者',
-    description: '累計ポイントが1500点を超えた！',
+    id: 'rare_gold',
+    name: '奇跡のハンター',
+    description: 'レジェンダリー植物を3種類以上発見した！',
     icon: '👑',
-    condition: (state) => state.points >= 1500
+    condition: (state) => state.collected.filter(p => p.rarity === 'Legendary').length >= 3
+  },
+
+  // 3. お花シリーズ
+  {
+    id: 'flower_1',
+    name: 'お花に挨拶',
+    description: 'お花カテゴリーの植物を3種類集めたニャ！',
+    icon: '🌸',
+    condition: (state) => state.collected.filter(p => p.category === 'flowers').length >= 3
   },
   {
-    id: 'flower_lover',
-    name: 'お花大好き',
-    description: '名前に「花」や「フラワー」が入る、または美しいお花を3つ以上登録した！',
-    icon: '🌸',
+    id: 'flower_2',
+    name: '百花繚乱',
+    description: 'お花カテゴリーの植物を7種類集めたニャ！',
+    icon: '🌺',
+    condition: (state) => state.collected.filter(p => p.category === 'flowers').length >= 7
+  },
+  {
+    id: 'flower_3',
+    name: 'お花畑の主',
+    description: 'お花カテゴリーの植物を15種類集めたニャ！',
+    icon: '🌹',
+    condition: (state) => state.collected.filter(p => p.category === 'flowers').length >= 15
+  },
+
+  // 4. 樹木シリーズ
+  {
+    id: 'tree_1',
+    name: 'どんぐり学者',
+    description: '樹木カテゴリーの植物を3種類集めたニャ！',
+    icon: '🌰',
+    condition: (state) => state.collected.filter(p => p.category === 'trees').length >= 3
+  },
+  {
+    id: 'tree_2',
+    name: '森林浴マスター',
+    description: '樹木カテゴリーの植物を6種類集めたニャ！',
+    icon: '🌳',
+    condition: (state) => state.collected.filter(p => p.category === 'trees').length >= 6
+  },
+  {
+    id: 'tree_3',
+    name: '世界樹の守護者',
+    description: '樹木カテゴリーの植物を12種類集めたニャ！',
+    icon: '🌲',
+    condition: (state) => state.collected.filter(p => p.category === 'trees').length >= 12
+  },
+
+  // 5. 多肉植物シリーズ
+  {
+    id: 'succ_1',
+    name: 'ぷにぷに双葉',
+    description: '観葉・多肉植物を3種類集めたニャ！',
+    icon: '🌵',
+    condition: (state) => state.collected.filter(p => p.category === 'succulents').length >= 3
+  },
+  {
+    id: 'succ_2',
+    name: '砂漠のオアシス',
+    description: '観葉・多肉植物を6種類集めたニャ！',
+    icon: '🏜️',
+    condition: (state) => state.collected.filter(p => p.category === 'succulents').length >= 6
+  },
+  {
+    id: 'succ_3',
+    name: '多肉のニャスター',
+    description: '観葉・多肉植物を12種類集めたニャ！',
+    icon: '👑',
+    condition: (state) => state.collected.filter(p => p.category === 'succulents').length >= 12
+  },
+
+  // 6. 朝活シリーズ
+  {
+    id: 'morning_1',
+    name: '朝寝ぼけスキャン',
+    description: '朝（5:00〜8:59）の時間帯に植物を発見したニャ！',
+    icon: '🌅',
+    condition: (state) => state.collected.filter(p => { const h = new Date(p.date).getHours(); return h >= 5 && h < 9; }).length >= 1
+  },
+  {
+    id: 'morning_2',
+    name: '朝活コケコッコー',
+    description: '朝の時間帯に植物を5種類発見したニャ！',
+    icon: '🐓',
+    condition: (state) => state.collected.filter(p => { const h = new Date(p.date).getHours(); return h >= 5 && h < 9; }).length >= 5
+  },
+  {
+    id: 'morning_3',
+    name: 'あさがおの目覚め',
+    description: '朝の時間帯に植物を12種類発見したニャ！',
+    icon: '☀️',
+    condition: (state) => state.collected.filter(p => { const h = new Date(p.date).getHours(); return h >= 5 && h < 9; }).length >= 12
+  },
+
+  // 7. 夜間観察シリーズ
+  {
+    id: 'night_1',
+    name: '宵のともしび',
+    description: '夜（20:00〜翌4:59）の時間帯に植物を発見したニャ！',
+    icon: '🏮',
+    condition: (state) => state.collected.filter(p => { const h = new Date(p.date).getHours(); return h >= 20 || h < 5; }).length >= 1
+  },
+  {
+    id: 'night_2',
+    name: '月夜のダンス',
+    description: '夜の時間帯に植物を5種類発見したニャ！',
+    icon: '🌙',
+    condition: (state) => state.collected.filter(p => { const h = new Date(p.date).getHours(); return h >= 20 || h < 5; }).length >= 5
+  },
+  {
+    id: 'night_3',
+    name: '月下美人の語り部',
+    description: '夜の時間帯に植物を12種類発見したニャ！',
+    icon: '🌌',
+    condition: (state) => state.collected.filter(p => { const h = new Date(p.date).getHours(); return h >= 20 || h < 5; }).length >= 12
+  },
+
+  // 8. 週末シリーズ
+  {
+    id: 'weekend_1',
+    name: '週末のお出かけ',
+    description: '土曜日または日曜日に植物を発見したニャ！',
+    icon: '🎒',
+    condition: (state) => state.collected.filter(p => { const d = new Date(p.date).getDay(); return d === 0 || d === 6; }).length >= 1
+  },
+  {
+    id: 'weekend_2',
+    name: '土日フル活動',
+    description: '土日に植物を5種類発見したニャ！',
+    icon: '👟',
+    condition: (state) => state.collected.filter(p => { const d = new Date(p.date).getDay(); return d === 0 || d === 6; }).length >= 5
+  },
+  {
+    id: 'weekend_3',
+    name: '週末ハンター',
+    description: '土日に植物を12種類発見したニャ！',
+    icon: '🧭',
+    condition: (state) => state.collected.filter(p => { const d = new Date(p.date).getDay(); return d === 0 || d === 6; }).length >= 12
+  },
+
+  // 9. 定点観測シリーズ
+  {
+    id: 'overlap_1',
+    name: 'また会えたニャ',
+    description: '同じ名前の植物を2回以上ファイリングしたニャ！',
+    icon: '📁',
     condition: (state) => {
-      const flowers = state.collected.filter(p => 
-        p.name.includes('花') || 
-        p.name.includes('サクラ') || 
-        p.name.includes('タンポポ') || 
-        p.name.includes('アジサイ') || 
-        p.name.includes('ヒマワリ') || 
-        p.name.includes('ローズ') ||
-        p.name.includes('チューリップ')
-      );
-      return flowers.length >= 3;
+      const counts = {};
+      state.collected.forEach(p => counts[p.name] = (counts[p.name] || 0) + 1);
+      return Object.values(counts).some(c => c >= 2);
+    }
+  },
+  {
+    id: 'overlap_2',
+    name: '定点観測ノート',
+    description: '同じ名前の植物を3回以上登録したものが2種類以上あるニャ！',
+    icon: '🗂️',
+    condition: (state) => {
+      const counts = {};
+      state.collected.forEach(p => counts[p.name] = (counts[p.name] || 0) + 1);
+      return Object.values(counts).filter(c => c >= 3).length >= 2;
+    }
+  },
+  {
+    id: 'overlap_3',
+    name: '歴史スクラップ',
+    description: '同じ名前の植物を5回以上登録したものが2種類以上あるニャ！',
+    icon: '📚',
+    condition: (state) => {
+      const counts = {};
+      state.collected.forEach(p => counts[p.name] = (counts[p.name] || 0) + 1);
+      return Object.values(counts).filter(c => c >= 5).length >= 2;
+    }
+  },
+
+  // 10. メモシリーズ
+  {
+    id: 'memo_1',
+    name: 'ひ言メモ',
+    description: 'マイ観察メモを書いた植物が3つ以上あるニャ！',
+    icon: '📝',
+    condition: (state) => state.collected.filter(p => p.memo && p.memo.trim().length > 0).length >= 3
+  },
+  {
+    id: 'memo_2',
+    name: '観察絵日記',
+    description: 'マイ観察メモを書いた植物が8つ以上あるニャ！',
+    icon: '📔',
+    condition: (state) => state.collected.filter(p => p.memo && p.memo.trim().length > 0).length >= 8
+  },
+  {
+    id: 'memo_3',
+    name: 'ニャルド大百科',
+    description: 'マイ観察メモを書いた植物が20件以上あるニャ！',
+    icon: '🖋️',
+    condition: (state) => state.collected.filter(p => p.memo && p.memo.trim().length > 0).length >= 20
+  },
+
+  // 11. 美しさシリーズ
+  {
+    id: 'beauty_1',
+    name: 'ちょっと素敵',
+    description: '美しさ査定（beautyScore）が 40 以上の植物を登録した！',
+    icon: '🎨',
+    condition: (state) => state.collected.some(p => p.beautyScore >= 40)
+  },
+  {
+    id: 'beauty_2',
+    name: '絶世の美',
+    description: '美しさ査定 45 以上の極めて美しい植物を3種類以上登録したニャ！',
+    icon: '🦋',
+    condition: (state) => state.collected.filter(p => p.beautyScore >= 45).length >= 3
+  },
+  {
+    id: 'beauty_3',
+    name: '美のミュージアム',
+    description: '美しさ査定 48 以上の至高の植物を8種類以上登録したニャ！',
+    icon: '💎',
+    condition: (state) => state.collected.filter(p => p.beautyScore >= 48).length >= 8
+  },
+
+  // 12. 有名度シリーズ
+  {
+    id: 'fame_1',
+    name: '街の有名人',
+    description: '知名度査定（fameScore）が 40 以上の植物を登録した！',
+    icon: '📢',
+    condition: (state) => state.collected.some(p => p.fameScore >= 40)
+  },
+  {
+    id: 'fame_2',
+    name: 'だれでも知る名木',
+    description: '知名度査定 45 以上の誰もが知る植物を3種類以上登録したニャ！',
+    icon: '🌟',
+    condition: (state) => state.collected.filter(p => p.fameScore >= 45).length >= 3
+  },
+  {
+    id: 'fame_3',
+    name: 'ランドマーク',
+    description: '知名度査定 48 以上の世界的な植物を8種類以上登録したニャ！',
+    icon: '🗺️',
+    condition: (state) => state.collected.filter(p => p.fameScore >= 48).length >= 8
+  },
+
+  // 13. 四季シリーズ
+  {
+    id: 'season_1',
+    name: 'めぐる季節',
+    description: '同じ名前の植物を異なる2つの季節で撮影・登録したニャ！',
+    icon: '🌱',
+    condition: (state) => {
+      const groups = {};
+      state.collected.forEach(p => {
+        if (!groups[p.name]) groups[p.name] = new Set();
+        const m = new Date(p.date).getMonth() + 1;
+        let s = 'w';
+        if (m === 3 || m === 4 || m === 5) s = 'sp';
+        else if (m === 6 || m === 7 || m === 8) s = 'su';
+        else if (m === 9 || m === 10 || m === 11) s = 'au';
+        groups[p.name].add(s);
+      });
+      return Object.values(groups).some(set => set.size >= 2);
+    }
+  },
+  {
+    id: 'season_2',
+    name: '三季のうつろい',
+    description: '同じ名前の植物を異なる3つの季節で撮影・登録したニャ！',
+    icon: '🍂',
+    condition: (state) => {
+      const groups = {};
+      state.collected.forEach(p => {
+        if (!groups[p.name]) groups[p.name] = new Set();
+        const m = new Date(p.date).getMonth() + 1;
+        let s = 'w';
+        if (m === 3 || m === 4 || m === 5) s = 'sp';
+        else if (m === 6 || m === 7 || m === 8) s = 'su';
+        else if (m === 9 || m === 10 || m === 11) s = 'au';
+        groups[p.name].add(s);
+      });
+      return Object.values(groups).some(set => set.size >= 3);
+    }
+  },
+  {
+    id: 'season_3',
+    name: '四季をともに',
+    description: '同じ名前の植物を、春・夏・秋・冬の4つすべての季節で登録したニャ！',
+    icon: '❄️',
+    condition: (state) => {
+      const groups = {};
+      state.collected.forEach(p => {
+        if (!groups[p.name]) groups[p.name] = new Set();
+        const m = new Date(p.date).getMonth() + 1;
+        let s = 'w';
+        if (m === 3 || m === 4 || m === 5) s = 'sp';
+        else if (m === 6 || m === 7 || m === 8) s = 'su';
+        else if (m === 9 || m === 10 || m === 11) s = 'au';
+        groups[p.name].add(s);
+      });
+      return Object.values(groups).some(set => set.size >= 4);
+    }
+  },
+
+  // 14. 連続撮影日数シリーズ
+  {
+    id: 'streak_1',
+    name: 'お散歩の三日坊主',
+    description: '連続3日植物を登録したニャ！',
+    icon: '👣',
+    condition: (state) => state.longestStreak >= 3
+  },
+  {
+    id: 'streak_2',
+    name: '毎日の日課ニャ',
+    description: '連続7日植物を登録したニャ！',
+    icon: '🗓️',
+    condition: (state) => state.longestStreak >= 7
+  },
+  {
+    id: 'streak_3',
+    name: '植物と生きる猫',
+    description: '連続20日植物を登録したニャ！',
+    icon: '👑',
+    condition: (state) => state.longestStreak >= 20
+  },
+
+  // 15. おちゃめスキャナーシリーズ
+  {
+    id: 'nonplant_1',
+    name: 'おちゃめな植物学者',
+    description: '植物以外の写真を1回見立て登録したニャ！',
+    icon: '🐱',
+    condition: (state) => state.nonPlantScanCount >= 1
+  },
+  {
+    id: 'nonplant_2',
+    name: 'なんでも見立て隊',
+    description: '植物以外の写真を5回見立て登録したニャ！',
+    icon: '🔍',
+    condition: (state) => state.nonPlantScanCount >= 5
+  },
+  {
+    id: 'nonplant_3',
+    name: '見立ての達人ニャ',
+    description: '植物以外の写真を15回見立て登録したニャ！',
+    icon: '🎭',
+    condition: (state) => state.nonPlantScanCount >= 15
+  },
+
+  // 16. シークレットバッジ (条件非公開)
+  {
+    id: 'secret_owl',
+    name: '夜更かしな学者',
+    description: '深夜（0:00〜3:59）の時間帯に植物を登録したニャ！',
+    icon: '🦉',
+    isSecret: true,
+    condition: (state) => state.collected.some(p => {
+      const h = new Date(p.date).getHours();
+      return h >= 0 && h < 4;
+    })
+  },
+  {
+    id: 'secret_masterpiece',
+    name: '最高の一枚',
+    description: '1回で合計230pts以上の最高評価を獲得したニャ！',
+    icon: '🎖️',
+    isSecret: true,
+    condition: (state) => state.collected.some(p => p.totalScore >= 230)
+  },
+  {
+    id: 'secret_speed',
+    name: 'スピードスター',
+    description: '前回の登録から30秒以内に別の植物を登録したニャ！',
+    icon: '⚡',
+    isSecret: true,
+    condition: (state) => {
+      const sorted = [...state.collected].sort((a, b) => new Date(a.date) - new Date(b.date));
+      for (let i = 1; i < sorted.length; i++) {
+        const diffSec = (new Date(sorted[i].date) - new Date(sorted[i-1].date)) / 1000;
+        if (diffSec > 0 && diffSec <= 30 && sorted[i].name !== sorted[i-1].name) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 ];
@@ -93,6 +470,16 @@ class AppState {
     this.badges = [];
     this.geminiKey = '';
     this.geminiModel = 'gemini-2.5-flash';
+    this.logoIcon = '🌸';
+    
+    // New parameters
+    this.customTitle = '';
+    this.unlockedFrames = ['none'];
+    this.lastScanDate = '';
+    this.currentStreak = 0;
+    this.longestStreak = 0;
+    this.nonPlantScanCount = 0;
+
     this.loadState();
   }
 
@@ -101,12 +488,21 @@ class AppState {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        this.points = parsed.points || 0;
+        this.points = parsed.points !== undefined ? parsed.points : 0;
         this.level = parsed.level || 1;
         this.collected = parsed.collected || [];
         this.badges = parsed.badges || [];
         this.geminiKey = parsed.geminiKey || '';
         this.geminiModel = parsed.geminiModel || 'gemini-2.5-flash';
+        this.logoIcon = parsed.logoIcon || '🌸';
+        
+        // Load new parameters
+        this.customTitle = parsed.customTitle || '';
+        this.unlockedFrames = parsed.unlockedFrames || ['none'];
+        this.lastScanDate = parsed.lastScanDate || '';
+        this.currentStreak = parsed.currentStreak || 0;
+        this.longestStreak = parsed.longestStreak || 0;
+        this.nonPlantScanCount = parsed.nonPlantScanCount || 0;
       }
     } catch (e) {
       console.error('Failed to load state from localStorage:', e);
@@ -121,7 +517,16 @@ class AppState {
         collected: this.collected,
         badges: this.badges,
         geminiKey: this.geminiKey,
-        geminiModel: this.geminiModel
+        geminiModel: this.geminiModel,
+        logoIcon: this.logoIcon,
+        
+        // Save new parameters
+        customTitle: this.customTitle,
+        unlockedFrames: this.unlockedFrames,
+        lastScanDate: this.lastScanDate,
+        currentStreak: this.currentStreak,
+        longestStreak: this.longestStreak,
+        nonPlantScanCount: this.nonPlantScanCount
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
@@ -129,30 +534,20 @@ class AppState {
     }
   }
 
+  get cumulativePoints() {
+    return this.collected.reduce((sum, p) => sum + (p.totalScore || 0), 0);
+  }
+
   getPointsForNextLevel() {
-    // Level L requires L * 200 total points to reach L+1
-    // e.g., Level 1 -> 2: 150 points
-    // Level 2 -> 3: 350 points (150 + 200)
-    // Let's use simple cumulative brackets:
-    // Lvl 1: 0 - 150
-    // Lvl 2: 150 - 400 (+250)
-    // Lvl 3: 400 - 750 (+350)
-    // Lvl 4: 750 - 1200 (+450)
-    // Lvl 5: 1200 - 1800 (+600)
-    // Lvl 6: 1800 - 2500 (+700)
-    // Lvl 7: 2500 - 3300 (+800)
-    // Formulate: Cumulative points needed for Level L = 50 * L * (L + 1) + 50 * L - 100 ?
-    // Let's make it a clean helper:
     return this.level * 200; 
   }
 
   getPointsProgress() {
-    // returns { currentInLevel, neededForLevel, percentage }
     const prevRequired = this.getPointsRequiredForLevel(this.level);
     const nextRequired = this.getPointsRequiredForLevel(this.level + 1);
     
     const range = nextRequired - prevRequired;
-    const currentProgress = this.points - prevRequired;
+    const currentProgress = this.cumulativePoints - prevRequired;
     
     const percentage = Math.min(100, Math.max(0, (currentProgress / range) * 100));
     return {
@@ -165,7 +560,6 @@ class AppState {
 
   getPointsRequiredForLevel(lvl) {
     if (lvl <= 1) return 0;
-    // Level L requires: sum_{i=1}^{L-1} (10 + 6i) points
     let total = 0;
     for (let i = 1; i < lvl; i++) {
       total += 10 + i * 6;
@@ -174,6 +568,9 @@ class AppState {
   }
 
   getTitle() {
+    if (this.customTitle) {
+      return this.customTitle;
+    }
     const idx = Math.min(this.level, 100) - 1;
     return TITLES[idx] || '偉大な植物学者ニャ';
   }
@@ -188,8 +585,29 @@ class AppState {
     this.saveState();
   }
 
+  setLogoIcon(icon) {
+    this.logoIcon = icon;
+    this.saveState();
+  }
+
+  setCustomTitle(title) {
+    this.customTitle = title;
+    this.saveState();
+  }
+
+  spendPoints(pts) {
+    this.points = Math.max(0, this.points - pts);
+    this.saveState();
+  }
+
+  unlockFrame(frameId) {
+    if (!this.unlockedFrames.includes(frameId)) {
+      this.unlockedFrames.push(frameId);
+      this.saveState();
+    }
+  }
+
   addPlant(plantData) {
-    // plantData: { name, scientificName, rarity, rarityScore, beautyScore, fameScore, description, catDoctorComment, photo }
     const id = 'plant_' + Date.now();
     const newPlant = {
       id,
@@ -200,14 +618,15 @@ class AppState {
     
     this.collected.push(newPlant);
     
-    // Add points
+    // Add points to spendable balance
     const earnedPoints = newPlant.totalScore;
     this.points += earnedPoints;
     
-    // Check for level ups
+    // Recalculate level using cumulative points
     let leveledUp = false;
-    while (this.level < 100 && this.points >= this.getPointsRequiredForLevel(this.level + 1)) {
-      this.level++;
+    const oldLevel = this.level;
+    this.recalculateLevel();
+    if (this.level > oldLevel) {
       leveledUp = true;
     }
     
@@ -252,6 +671,17 @@ class AppState {
     return false;
   }
 
+  // Update photo frame decoration for a specific collected plant
+  updatePlantFrame(plantId, frameId) {
+    const plant = this.collected.find(p => p.id === plantId);
+    if (plant) {
+      plant.frame = frameId;
+      this.saveState();
+      return true;
+    }
+    return false;
+  }
+
   removePlant(plantId) {
     const index = this.collected.findIndex(p => p.id === plantId);
     if (index !== -1) {
@@ -261,7 +691,7 @@ class AppState {
       // Remove from list
       this.collected.splice(index, 1);
       
-      // Deduct points
+      // Deduct spendable points (cannot go below 0)
       this.points = Math.max(0, this.points - pointsLost);
       
       // Recalculate level
@@ -278,9 +708,14 @@ class AppState {
 
   recalculateLevel() {
     this.level = 1;
-    while (this.level < 100 && this.points >= this.getPointsRequiredForLevel(this.level + 1)) {
+    const totalScoreSum = this.cumulativePoints;
+    while (this.level < 100 && totalScoreSum >= this.getPointsRequiredForLevel(this.level + 1)) {
       this.level++;
     }
+  }
+
+  getAvailableTitles() {
+    return TITLES.slice(0, this.level);
   }
 
   resetAll() {
@@ -289,6 +724,13 @@ class AppState {
     this.collected = [];
     this.badges = [];
     this.geminiModel = 'gemini-2.5-flash';
+    this.logoIcon = '🌸';
+    this.customTitle = '';
+    this.unlockedFrames = ['none'];
+    this.lastScanDate = '';
+    this.currentStreak = 0;
+    this.longestStreak = 0;
+    this.nonPlantScanCount = 0;
     this.saveState();
   }
 }
