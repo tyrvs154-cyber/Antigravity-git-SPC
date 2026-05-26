@@ -4499,31 +4499,43 @@ input[type="text"], input[type="password"], select, textarea {
   text-align: center;
 }
 
-/* 温室のドット絵背景・アセット適用スタイル */
+/* 温室のボタニカルアート背景・アセット適用スタイル */
 #screen-greenhouse {
-  background-image: url('./assets/images/gh_bg_pixel.png') !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
-  image-rendering: pixelated !important;
+  image-rendering: auto !important; /* ピクセル化を解除 */
 }
 
-/* ドット絵植木鉢画像 */
+/* テーマ別ボタニカルアート背景 */
+#screen-greenhouse.theme-gh-default {
+  background-image: url('./assets/images/gh_bg_botanical_default.png') !important;
+}
+
+#screen-greenhouse.theme-gh-starry {
+  background-image: url('./assets/images/gh_bg_botanical_starry.png') !important;
+}
+
+#screen-greenhouse.theme-gh-neon {
+  background-image: url('./assets/images/gh_bg_botanical_neon.png') !important;
+}
+
+/* イラスト植木鉢画像 */
 .gh-pot-image {
-  width: calc(22px * var(--font-scale)) !important;
-  height: calc(12px * var(--font-scale)) !important;
+  width: calc(30px * var(--font-scale)) !important; /* イラストなので少し大きめに調整 */
+  height: calc(18px * var(--font-scale)) !important;
   object-fit: contain !important;
-  image-rendering: pixelated !important;
-  margin-top: -10px !important;
+  image-rendering: auto !important; /* ピクセル化を解除 */
+  margin-top: -12px !important;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
 }
 
-/* ドット絵植物画像 */
+/* イラスト植物画像 */
 .gh-plant-image {
-  width: calc(32px * var(--font-scale)) !important;
-  height: calc(32px * var(--font-scale)) !important;
+  width: calc(40px * var(--font-scale)) !important; /* イラストなので少し大きめに調整 */
+  height: calc(40px * var(--font-scale)) !important;
   object-fit: contain !important;
-  image-rendering: pixelated !important;
+  image-rendering: auto !important; /* ピクセル化を解除 */
 }
 
 /* デフォルトスキンとの調整 */
@@ -4552,6 +4564,68 @@ input[type="text"], input[type="password"], select, textarea {
   0% { filter: hue-rotate(0deg); }
   100% { filter: hue-rotate(360deg); }
 }
+
+/* 温室カスタマイズパネルを縦積みに（植木鉢をテーマの下へ） */
+.gh-custom-panel {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  padding: 12px 16px !important;
+}
+
+.gh-custom-item {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+}
+
+.gh-custom-item label {
+  font-size: calc(10px * var(--font-scale)) !important;
+  margin-bottom: 2px !important;
+  font-weight: 800 !important;
+}
+
+.gh-select-custom {
+  width: 100% !important;
+  height: 40px !important;
+  font-size: calc(11px * var(--font-scale)) !important;
+}
+
+/* ヘッダーの設定ボタン右上配置のスタイル調整 */
+.header-logo-wrapper {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.header-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: auto !important; /* 横幅100%指定を解除して左側に寄せる */
+}
+
+.header-right {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin-top: 2px !important;
+}
+
+.settings-btn {
+  font-size: 26px !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  color: var(--color-primary-dark) !important;
+  z-index: 20 !important;
+}
+
 
 
 

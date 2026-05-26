@@ -928,9 +928,9 @@ el.registerPlantBtn.addEventListener('click', () => {
       displayLevelUpPopup(registration.newLevel);
     }, 1000);
   } else {
-    // Return to home screen automatically
-    const homeTab = Array.from(el.navItems).find(n => n.getAttribute('data-screen') === 'home');
-    if (homeTab) homeTab.click();
+    // Return to zukan screen automatically
+    const zukanTab = Array.from(el.navItems).find(n => n.getAttribute('data-screen') === 'zukan');
+    if (zukanTab) zukanTab.click();
   }
 });
 
@@ -956,9 +956,9 @@ el.levelupPopupCloseBtn.addEventListener('click', () => {
   playClickSound();
   el.levelupPopupBackdrop.style.display = 'none';
   
-  // Route to home
-  const homeTab = Array.from(el.navItems).find(n => n.getAttribute('data-screen') === 'home');
-  if (homeTab) homeTab.click();
+  // Route to zukan
+  const zukanTab = Array.from(el.navItems).find(n => n.getAttribute('data-screen') === 'zukan');
+  if (zukanTab) zukanTab.click();
 });
 
 // --------------------------------------------------------------------------

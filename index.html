@@ -19,9 +19,14 @@
     
     <!-- Top Header -->
     <header class="app-header">
-      <div class="header-logo" id="header-logo-btn" style="cursor: pointer;" title="ロゴバッジを変更">
-        <span class="logo-icon" id="logo-icon-emoji">🌸</span>
-        <h1 class="logo-title">はなみっけ</h1>
+      <div class="header-logo-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="header-logo" id="header-logo-btn" style="cursor: pointer;" title="ロゴバッジを変更">
+          <span class="logo-icon" id="logo-icon-emoji">🌸</span>
+          <h1 class="logo-title">はなみっけ</h1>
+        </div>
+        <button class="settings-btn" id="open-settings-btn" aria-label="設定">
+          ⚙️
+        </button>
       </div>
       <div class="header-right">
         <div class="header-stats-wrapper">
@@ -35,9 +40,6 @@
             <span class="point-unit">pts</span>
           </div>
         </div>
-        <button class="settings-btn" id="open-settings-btn" aria-label="設定">
-          ⚙️
-        </button>
       </div>
     </header>
 
