@@ -467,7 +467,7 @@ class AppState {
     this.collected = [];
     this.badges = [];
     this.geminiKey = '';
-    this.geminiModel = 'gemini-2.5-flash';
+    this.geminiModel = 'gemini-3.1-flash-lite';
     this.logoIcon = '🌸';
     
     // New parameters
@@ -503,7 +503,7 @@ class AppState {
         this.collected = parsed.collected || [];
         this.badges = parsed.badges || [];
         this.geminiKey = parsed.geminiKey || '';
-        this.geminiModel = parsed.geminiModel || 'gemini-2.5-flash';
+        this.geminiModel = parsed.geminiModel || 'gemini-3.1-flash-lite';
         this.logoIcon = parsed.logoIcon || '🌸';
         
         // Load new parameters

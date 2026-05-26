@@ -374,7 +374,7 @@ function setupSettings() {
     // Sync settings state inputs
     el.apiKeyInput.value = state.geminiKey || '';
     if (el.apiModelSelect) {
-      el.apiModelSelect.value = state.geminiModel || 'gemini-2.5-flash';
+      el.apiModelSelect.value = state.geminiModel || 'gemini-3.1-flash-lite';
     }
     if (state.geminiKey) {
       el.apiKeyStatus.textContent = 'APIキーは登録済みであるニャ！😸';
@@ -467,7 +467,7 @@ function setupSettings() {
 
   // Auto-initialize connection mode on launch
   if (el.apiModelSelect) {
-    el.apiModelSelect.value = state.geminiModel || 'gemini-2.5-flash';
+    el.apiModelSelect.value = state.geminiModel || 'gemini-3.1-flash-lite';
   }
   if (state.geminiKey) {
     el.modeGeminiBtn.classList.add('active');
@@ -2062,14 +2062,12 @@ async function runNativeRewardAd() {
 
     await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (err) => {
       console.error('Ad failed to load:', err);
-      alert('⚠️ 広告の読み込みに失敗したニャ。代わりにデモ用モック広告を再生するニャ！');
-      runMockRewardAd();
+      alert('⚠️ 通信失敗により、広告の読み込みに失敗したニャ。\nインターネットの接続状況を確認するか、VPNをONにしている場合はOFFにしてから再度お試しくださいニャ。（※広告再生に失敗したため、ポイントは付与されないニャ）');
     });
 
     await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (err) => {
       console.error('Ad failed to show:', err);
-      alert('⚠️ 広告の表示に失敗したニャ。代わりにデモ用モック広告を再生するニャ！');
-      runMockRewardAd();
+      alert('⚠️ 通信失敗により、広告の表示に失敗したニャ。\nインターネットの接続状況を確認するか、VPNをONにしている場合はOFFにしてから再度お試しくださいニャ。（※広告再生に失敗したため、ポイントは付与されないニャ）');
     });
 
     await AdMob.prepareRewardVideoAd(options);
@@ -2077,8 +2075,7 @@ async function runNativeRewardAd() {
 
   } catch (error) {
     console.error('Native AdMob error:', error);
-    alert('⚠️ 広告再生中にエラーが発生したニャ。デモ用モック広告を再生するニャ！');
-    runMockRewardAd();
+    alert('⚠️ 広告再生中にエラーが発生したニャ。通信状況を確認するか、VPNをONにしている場合はOFFにしてから再度お試しくださいニャ。');
   }
 }
 

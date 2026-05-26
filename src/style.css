@@ -3138,9 +3138,23 @@ input:checked + .slider:before {
   background-image: linear-gradient(#fff, #fff), linear-gradient(135deg, #ff007f, #7f00ff, #00ff7f, #ffff00) !important;
   background-origin: border-box !important;
   background-clip: padding-box, border-box !important;
+  color: var(--color-text-dark) !important;
+}
+.title-val.bg-pink.border-rainbow, .header-title-badge.bg-pink.border-rainbow {
+  background-image: linear-gradient(#FFD2D2, #FFD2D2), linear-gradient(135deg, #ff007f, #7f00ff, #00ff7f, #ffff00) !important;
+  color: #4A3030 !important;
+}
+.title-val.bg-yellow.border-rainbow, .header-title-badge.bg-yellow.border-rainbow {
+  background-image: linear-gradient(#FFECA1, #FFECA1), linear-gradient(135deg, #ff007f, #7f00ff, #00ff7f, #ffff00) !important;
+  color: #4A2B00 !important;
+}
+.title-val.bg-blue.border-rainbow, .header-title-badge.bg-blue.border-rainbow {
+  background-image: linear-gradient(#C1E3FF, #C1E3FF), linear-gradient(135deg, #ff007f, #7f00ff, #00ff7f, #ffff00) !important;
+  color: #182238 !important;
 }
 .title-val.bg-dark.border-rainbow, .header-title-badge.bg-dark.border-rainbow {
   background-image: linear-gradient(#333, #333), linear-gradient(135deg, #ff007f, #7f00ff, #00ff7f, #ffff00) !important;
+  color: #ffffff !important;
 }
 
 /* ==========================================================================
