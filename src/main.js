@@ -2037,15 +2037,15 @@ async function runNativeRewardAd() {
   try {
     const options = {
       adId: 'ca-app-pub-3940256099942544/5224354917',
+      isTesting: true,
     };
 
-    // Remove any existing listeners first to avoid duplicate reward firing
     await AdMob.removeAllListeners();
 
     let rewardEarned = false;
 
-    // Listeners for reward events
     await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
+      console.log('Reward earned:', reward);
       rewardEarned = true;
     });
 
@@ -2066,9 +2066,14 @@ async function runNativeRewardAd() {
       runMockRewardAd();
     });
 
-    // Prepare and show the ad
-    await AdMob.prepareReward(options);
-    await AdMob.showReward();
+    await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (err) => {
+      console.error('Ad failed to show:', err);
+      alert('⚠️ 広告の表示に失敗したニャ。代わりにデモ用モック広告を再生するニャ！');
+      runMockRewardAd();
+    });
+
+    await AdMob.prepareRewardVideoAd(options);
+    await AdMob.showRewardVideoAd();
 
   } catch (error) {
     console.error('Native AdMob error:', error);
