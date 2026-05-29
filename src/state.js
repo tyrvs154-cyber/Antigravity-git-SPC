@@ -42,6 +42,86 @@ export const GREENHOUSE_CONFIG = {
   }
 };
 
+const DB_NAME = 'hanamikke_db';
+const STORE_NAME = 'photos';
+
+class PhotoDB {
+  static open() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+      request.onsuccess = (e) => resolve(e.target.result);
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  static async get(key) {
+    try {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.error('IndexedDB get error:', e);
+      return null;
+    }
+  }
+
+  static async set(key, value) {
+    try {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.put(value, key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.error('IndexedDB set error:', e);
+    }
+  }
+
+  static async delete(key) {
+    try {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.error('IndexedDB delete error:', e);
+    }
+  }
+
+  static async clear() {
+    try {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.error('IndexedDB clear error:', e);
+    }
+  }
+}
+
 const STORAGE_KEY = 'hanamikke_state_v1';
 
 const TITLES = [
@@ -495,6 +575,27 @@ const BADGE_DEFINITIONS = [
       const diffSec = (new Date(latest.date) - new Date(prev.date)) / 1000;
       return diffSec > 0 && diffSec <= 30 && latest.name !== prev.name;
     }
+  },
+  {
+    id: 'ad_watch_1',
+    name: '見習いスポンサー',
+    description: 'スポンサー動画を1回視聴したニャ！',
+    icon: '📺',
+    condition: (state) => state.adWatchCount >= 1
+  },
+  {
+    id: 'ad_watch_2',
+    name: 'お得意様ニャ',
+    description: 'スポンサー動画を5回視聴したニャ！',
+    icon: '🎁',
+    condition: (state) => state.adWatchCount >= 5
+  },
+  {
+    id: 'ad_watch_3',
+    name: '大パトロン学者',
+    description: 'スポンサー動画を15回視聴したニャ！',
+    icon: '⚜️',
+    condition: (state) => state.adWatchCount >= 15
   }
 ];
 
@@ -554,8 +655,31 @@ class AppState {
     this.ghRecords = {};
     this.ghActiveTheme = 'default';
     this.ghActivePot = 'default';
+    this.ghActiveBackplate = 'default';
+    this.scanPhotoQuality = 'standard'; // 'standard' | 'max'
+    this.adWatchCount = 0;
 
     this.loadState();
+    this.loadPhotos();
+  }
+
+  async loadPhotos() {
+    try {
+      for (let plant of this.collected) {
+        if (!plant.photo) {
+          const storedPhoto = await PhotoDB.get(plant.id);
+          if (storedPhoto) {
+            plant.photo = storedPhoto;
+          }
+        }
+      }
+      console.log('IndexedDB: Successfully loaded all plant photos');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('photos-loaded'));
+      }
+    } catch (e) {
+      console.error('IndexedDB: Failed to load photos:', e);
+    }
   }
 
   loadState() {
@@ -600,6 +724,9 @@ class AppState {
         this.ghRecords = parsed.ghRecords || {};
         this.ghActiveTheme = parsed.ghActiveTheme || 'default';
         this.ghActivePot = parsed.ghActivePot || 'default';
+        this.ghActiveBackplate = parsed.ghActiveBackplate || 'default';
+        this.scanPhotoQuality = parsed.scanPhotoQuality || 'standard';
+        this.adWatchCount = parsed.adWatchCount || 0;
 
         if (parsed.ghSlots) {
           this.ghSlots = parsed.ghSlots;
@@ -626,10 +753,25 @@ class AppState {
 
   saveState() {
     try {
+      // Non-blocking save of photos to IndexedDB
+      this.collected.forEach(plant => {
+        if (plant.photo) {
+          PhotoDB.set(plant.id, plant.photo).catch(e => {
+            console.error(`Failed to save photo for ${plant.id} to IndexedDB:`, e);
+          });
+        }
+      });
+
+      // Strip photo field before saving to localStorage to stay within size limit
+      const serializedCollected = this.collected.map(plant => {
+        const { photo, ...rest } = plant;
+        return rest;
+      });
+
       const data = {
         points: this.points,
         level: this.level,
-        collected: this.collected,
+        collected: serializedCollected,
         badges: this.badges,
         geminiKey: this.geminiKey,
         geminiModel: this.geminiModel,
@@ -661,7 +803,10 @@ class AppState {
         ghSeeds: this.ghSeeds,
         ghRecords: this.ghRecords,
         ghActiveTheme: this.ghActiveTheme,
-        ghActivePot: this.ghActivePot
+        ghActivePot: this.ghActivePot,
+        ghActiveBackplate: this.ghActiveBackplate,
+        scanPhotoQuality: this.scanPhotoQuality,
+        adWatchCount: this.adWatchCount
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
@@ -753,6 +898,13 @@ class AppState {
     
     this.collected.push(newPlant);
     
+    // Save photo to IndexedDB immediately
+    if (newPlant.photo) {
+      PhotoDB.set(newPlant.id, newPlant.photo).catch(e => {
+        console.error('Failed to save new plant photo to IndexedDB:', e);
+      });
+    }
+
     // Add points to spendable balance
     const earnedPoints = newPlant.totalScore;
     this.points += earnedPoints;
@@ -832,6 +984,11 @@ class AppState {
       // Remove from list
       this.collected.splice(index, 1);
       
+      // Delete photo from IndexedDB
+      PhotoDB.delete(plantId).catch(e => {
+        console.error(`Failed to delete photo for ${plantId} from IndexedDB:`, e);
+      });
+
       // Deduct spendable points (cannot go below 0)
       this.points = Math.max(0, this.points - pointsLost);
       
@@ -960,8 +1117,26 @@ class AppState {
     this.ghRecords = {};
     this.ghActiveTheme = 'default';
     this.ghActivePot = 'default';
+    this.ghActiveBackplate = 'default';
+    this.scanPhotoQuality = 'standard';
+    this.adWatchCount = 0;
+
+    // Clear photo database in IndexedDB
+    PhotoDB.clear().catch(e => {
+      console.error('Failed to clear photo database:', e);
+    });
 
     this.saveState();
+  }
+
+  watchAd() {
+    this.adWatchCount = (this.adWatchCount || 0) + 1;
+    const unlockedBadges = this.checkBadgeUnlocks();
+    this.saveState();
+    return {
+      adWatchCount: this.adWatchCount,
+      newBadges: unlockedBadges
+    };
   }
 
   getPlantSpec(plantId) {

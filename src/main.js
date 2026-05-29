@@ -7,6 +7,7 @@ import { analyzePlantImage, generateHybridPlant } from './gemini.js';
 import { camera } from './camera.js';
 import { AdMob, RewardAdPluginEvents } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 
 // Sound enabled global setting
 let soundEnabled = true;
@@ -169,9 +170,27 @@ const NYAN_GREETINGS = [
   "タンポポやシロツメクサはよく踏まれるけど、とっても強い心を持ってるニャ！🌼",
   "研究レベルが上がると、ワシの助手としての新しい『称号』がもらえるニャン！😻",
   "珍しい植物ほど高得点になるニャ！公園の奥や森の中を探してみるニャ！✨",
-  "葉っぱの形や色をじっくり観察するのも、植物学者の基本であるニャ！🔍",
   "設定画面からGemini APIキーを登録すると、リアルのAI画像解析ができるニャン！📲",
-  "ハエトリソウの葉っぱが閉じるスピードは、猫パンチ並みニャ！挟まれたら痛いニャ…。🥩"
+  "ハエトリソウの葉っぱが閉じるスピードは、猫パンチ並みニャ！挟まれたら痛いニャ…。🥩",
+  "植物観察の基本は、まず『葉っぱのつき方（葉序）』を見るんニャ！対生か互生かを見極めるだけで、科の特定がグッと縮まるニャ！🍀",
+  "ルーペを使うときは、ルーペを目の前に固定して、見たい花や葉を前後に動かしてピントを合わせるのが植物学者の基本ニャ！🔍",
+  "道端の『雑草』と呼ばれる植物も、ルーペでのぞくと信じられないほど精巧な花の形をしているニャ。名前を調べるのが観察の第一歩ニャ！🌼",
+  "野外で植物画（ボタニカルアート）を描くときは、花弁の数や雄しべの数、葉のギザギザ（鋸歯）を正確にスケッチすることが最も重要ニャ！✏️",
+  "植物を同定するときは、花だけでなく、根元の葉（根生葉）や、果実の形、茎の断面が四角いか丸いかも重要な手がかりになるニャ！🌱",
+  "似たような黄色いお花でも、タンポポのように『舌状花』が集まったものと、菜の花のように十字架の形をしたものでは全く別のグループニャ！🌻",
+  "植物採取のときは、花や葉だけでなく、全体の姿がわかるように採るニャ。押し葉標本（さく葉標本）にするときは、新聞紙に挟んで水分を早く抜くのがコツニャ！🍁",
+  "どんぐりを見つけたら、お椀のような『殻斗（かくと）』の模様を観察するニャ！縞模様か、うろこ状かでコナラ属の種を見分けられるニャ！🌰",
+  "森の中や道端で、すりつぶすとレモンのような香りがする葉っぱ（カラスザンショウなど）を見つけたら、それはミカン科の証拠ニャ！🍊",
+  "植物の学名（ラテン語）を調べるとき、最初の単語は『属名』、２番目の単語は『種小名』を表すニャ！二名法はリンネが完成させたニャ！🇸🇪",
+  "野外でスケッチをとるときは、花全体の形だけでなく、花を切断した縦断面を描くと、子房の位置（子房上位か下位か）がわかりやすくなって研究に役立つニャ！🌸",
+  "植物の分類を見分けるときは、花びらが1枚ずつ離れている『離弁花』か、根元でくっついている『合弁花』かを見るニャ！これで科の絞り込みがしやすくなるニャ！🌼",
+  "双子葉植物と単子葉植物は、最初の『子葉（ふたば）』の数だけでなく、葉脈の走り方（網の目状か平行か）や、根の形（主根と側根かひげ根か）も全く違うニャ！🌱",
+  "タンポポの綿毛（冠毛）は、実は花びらやガクが変化したものニャ！風に乗って遠くへ飛ぶためのパラシュートのような進化を遂げたニャン！🎈",
+  "道端のドクダミの葉をちぎると強い臭いがするニャ！これはデカノイルアセトアルデヒドという精油成分で、強い殺菌・抗菌作用があるんニャ！薬草の基本ニャ！🌿",
+  "木本の『年輪』は、春から夏にかけて急成長する淡い色の部分と、秋に成長が遅くなってできる濃い色の部分が交互に並んでできているニャ！寒暖差のおかげニャ！🌲",
+  "アジサイの花の色は、土壌の酸性度（pH）で変わるニャ！酸性土壌だとアルミニウムが溶け出して花が青くなり、中性〜アルカリ性だと赤くなる不思議な性質ニャ！🎨",
+  "夜間に花を咲かせる植物（マツヨイグサなど）は、月明かりの中でも目立つように『白い花』や『黄色い花』が多く、夜行性のガなどを香りで引き寄せるニャ！🌙",
+  "植物画を描くときは、葉のつき方が茎に対して交互か（互生）、向き合っているか（対生）、あるいは車輪のように輪状に生えているか（輪生）を正確に描写するニャ！🌀"
 ];
 
 // Helper to apply custom decorations to title elements
@@ -216,13 +235,29 @@ window.addEventListener('DOMContentLoaded', () => {
   setupBadges();
   setupTitleSelector();
   setupShop();
-  setupGreenhouse();
+  // setupGreenhouse();
   setupAdMob();
+  setupBackButton();
+
+  window.addEventListener('photos-loaded', () => {
+    renderZukanGrid();
+  });
   setupLeafDrifts();
   
   // Random Nyan Home message
   rotateNyanHomeSpeech();
-  setInterval(rotateNyanHomeSpeech, 15000);
+  let speechInterval = setInterval(rotateNyanHomeSpeech, 15000);
+
+  // Click on Dr. Nyan card to change message
+  const nyanCard = document.querySelector('.nyan-greeting-card');
+  if (nyanCard) {
+    nyanCard.addEventListener('click', () => {
+      playClickSound();
+      rotateNyanHomeSpeech();
+      clearInterval(speechInterval);
+      speechInterval = setInterval(rotateNyanHomeSpeech, 15000);
+    });
+  }
 
   // Initialize camera elements
   camera.init(el.webcam, el.hiddenCanvas);
@@ -274,12 +309,21 @@ function setupNav() {
 
       // Show target screen
       Object.keys(el.screens).forEach(key => {
-        if (key === targetScreen) {
-          el.screens[key].classList.add('active');
-        } else {
-          el.screens[key].classList.remove('active');
+        const screenEl = el.screens[key];
+        if (screenEl) {
+          if (key === targetScreen) {
+            screenEl.classList.add('active');
+          } else {
+            screenEl.classList.remove('active');
+          }
         }
       });
+
+      // Reset scroll position to top
+      const appMain = document.querySelector('.app-main');
+      if (appMain) {
+        appMain.scrollTop = 0;
+      }
 
       // Special screen transitions
       if (targetScreen === 'scan') {
@@ -296,6 +340,7 @@ function setupNav() {
         renderBadgesGrid();
       }
 
+      /* [OFF]
       if (greenhouseTimer) {
         clearInterval(greenhouseTimer);
         greenhouseTimer = null;
@@ -308,6 +353,7 @@ function setupNav() {
           renderGreenhouseRealtimeOnly();
         }, 1000);
       }
+      */
     });
   });
 
@@ -517,6 +563,23 @@ function setupSettings() {
 // --------------------------------------------------------------------------
 // Camera & Scan Actions
 // --------------------------------------------------------------------------
+function updateQualityToggleUI() {
+  const btn = document.getElementById('scan-quality-toggle-btn');
+  const icon = document.getElementById('scan-quality-icon');
+  const label = document.getElementById('scan-quality-lbl');
+  if (!btn || !icon || !label) return;
+
+  if (state.scanPhotoQuality === 'max') {
+    btn.classList.add('max');
+    icon.textContent = '👑';
+    label.textContent = '最高画質';
+  } else {
+    btn.classList.remove('max');
+    icon.textContent = '📷';
+    label.textContent = '標準画質';
+  }
+}
+
 function setupCamera() {
   // Capture photo snapshot
   el.takeSnapshotBtn.addEventListener('click', () => {
@@ -607,6 +670,47 @@ function setupCamera() {
   el.retryCameraBtn.addEventListener('click', () => {
     playClickSound();
     startScanner();
+  });
+
+  // Initialize quality toggle UI from state
+  updateQualityToggleUI();
+
+  // Quality Toggle Listener
+  const qualityToggleBtn = document.getElementById('scan-quality-toggle-btn');
+  if (qualityToggleBtn) {
+    qualityToggleBtn.addEventListener('click', () => {
+      playClickSound();
+      state.scanPhotoQuality = state.scanPhotoQuality === 'max' ? 'standard' : 'max';
+      state.saveState();
+      updateQualityToggleUI();
+    });
+  }
+
+  // Aspect Ratio Toggles
+  const aspectBtns = document.querySelectorAll('.aspect-btn');
+  const viewfinderContainer = document.querySelector('.scanner-viewfinder-container');
+
+  // Initialize aspect ratio from default or state (camera.aspectRatio defaults to '1:1')
+  if (viewfinderContainer) {
+    viewfinderContainer.style.aspectRatio = camera.aspectRatio.replace(':', ' / ');
+  }
+  aspectBtns.forEach(btn => {
+    const ratio = btn.getAttribute('data-ratio');
+    if (ratio === camera.aspectRatio) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+
+    btn.addEventListener('click', () => {
+      playClickSound();
+      aspectBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      camera.aspectRatio = ratio;
+      if (viewfinderContainer) {
+        viewfinderContainer.style.aspectRatio = ratio.replace(':', ' / ');
+      }
+    });
   });
 }
 
@@ -817,6 +921,15 @@ function presentAppraisalResult(plantResult, dataUrl) {
 
   // Display backdrop
   el.resultModalBackdrop.style.display = 'flex';
+
+  // Reset scroll position after display to ensure browser registers it
+  const resultScroll = document.querySelector('.result-modal-scroll');
+  if (resultScroll) {
+    resultScroll.scrollTop = 0;
+    setTimeout(() => {
+      resultScroll.scrollTop = 0;
+    }, 50);
+  }
   
   // Start counting animations after dialog opens
   setTimeout(() => {
@@ -1358,6 +1471,15 @@ function showZukanDetail(instances) {
   });
 
   el.zukanDetailBackdrop.style.display = 'flex';
+
+  // Reset scroll position after display to ensure browser registers it
+  const scrollContent = document.querySelector('.sheet-scroll-content');
+  if (scrollContent) {
+    scrollContent.scrollTop = 0;
+    setTimeout(() => {
+      scrollContent.scrollTop = 0;
+    }, 50);
+  }
 }
 
 // --------------------------------------------------------------------------
@@ -1952,9 +2074,6 @@ function setupLightbox() {
 function setupGreenhouse() {
   const openRecordsBtn = document.getElementById('gh-open-records-btn');
   const closeRecordsBtn = document.getElementById('gh-close-records-btn');
-  const harvestAllBtn = document.getElementById('gh-harvest-all-btn');
-  const themeSelect = document.getElementById('gh-theme-select');
-  const potSelect = document.getElementById('gh-pot-select');
   const closePlantModalBtn = document.getElementById('gh-close-plant-modal-btn');
   const breedExecuteBtn = document.getElementById('gh-breed-execute-btn');
   const breedResultCloseBtn = document.getElementById('gh-breed-result-close-btn');
@@ -1979,50 +2098,6 @@ function setupGreenhouse() {
     closePlantModalBtn.addEventListener('click', () => {
       playClickSound();
       document.getElementById('gh-plant-seed-modal').style.display = 'none';
-    });
-  }
-
-  // 3. 一括回収
-  if (harvestAllBtn) {
-    harvestAllBtn.addEventListener('click', () => {
-      playClickSound();
-      const matureSlots = state.ghSlots.filter(s => s.status === 'mature' && s.slotId <= state.ghSlotCount);
-      if (matureSlots.length === 0) {
-        alert('⚠️ 収穫可能な植物がないニャ！');
-        return;
-      }
-
-      matureSlots.forEach(s => {
-        const slotEl = document.querySelector(`.gh-slot[data-slot-id="${s.slotId}"]`);
-        if (slotEl) {
-          triggerPointsFloatEffect(slotEl, Math.floor(s.accumulatedPoints));
-        }
-      });
-
-      const res = state.harvestAllSlots();
-      if (res.success) {
-        if (soundEnabled) audio.playSuccess();
-        updateUI();
-        renderGreenhouse();
-      }
-    });
-  }
-
-  // 4. カスタマイズ変更イベント
-  if (themeSelect) {
-    themeSelect.addEventListener('change', (e) => {
-      playClickSound();
-      state.ghActiveTheme = e.target.value;
-      state.saveState();
-      applyGreenhouseThemeClass();
-    });
-  }
-  if (potSelect) {
-    potSelect.addEventListener('change', (e) => {
-      playClickSound();
-      state.ghActivePot = e.target.value;
-      state.saveState();
-      renderGreenhouse();
     });
   }
 
@@ -2073,7 +2148,7 @@ function setupGreenhouse() {
         alert('⚠️ 交配中にエラーが発生したニャ。インターネット接続とAPIキーの設定を確認してくださいニャ！\nエラー内容: ' + err.message);
       } finally {
         breedExecuteBtn.disabled = false;
-        breedExecuteBtn.textContent = '🧪 交配を実行する（2つ消費）';
+        breedExecuteBtn.textContent = '🧪 交配を実行する';
       }
     });
   }
@@ -2087,20 +2162,278 @@ function setupGreenhouse() {
     });
   }
 
+  // --- 温室手帳（きせかえモーダル）の制御 ---
+  const journalBtn = document.getElementById('gh-journal-btn');
+  const journalModal = document.getElementById('gh-journal-modal');
+  const closeJournalBtn = document.getElementById('gh-close-journal-btn');
+
+  if (journalBtn && journalModal && closeJournalBtn) {
+    journalBtn.addEventListener('click', () => {
+      playClickSound();
+      updateJournalActiveStates();
+      journalModal.style.display = 'flex';
+    });
+
+    closeJournalBtn.addEventListener('click', () => {
+      playClickSound();
+      journalModal.style.display = 'none';
+    });
+    
+    journalModal.addEventListener('click', (e) => {
+      if (e.target === journalModal) {
+        journalModal.style.display = 'none';
+      }
+    });
+
+    // 手帳のタブ切り替え
+    const tabs = journalModal.querySelectorAll('.gh-journal-tab');
+    const pages = journalModal.querySelectorAll('.gh-journal-page');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        playClickSound();
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const targetTab = tab.getAttribute('data-tab');
+        pages.forEach(page => {
+          if (page.id === `gh-page-${targetTab}`) {
+            page.style.display = 'block';
+          } else {
+            page.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // きせかえ項目のクリック処理
+    const optItems = journalModal.querySelectorAll('.gh-custom-option-item');
+    optItems.forEach(item => {
+      const type = item.getAttribute('data-type');
+      const val = item.getAttribute('data-val');
+      const btn = item.querySelector('.gh-apply-opt-btn');
+
+      const handleApply = (e) => {
+        e.stopPropagation();
+        playClickSound();
+        if (type === 'bg') {
+          state.ghActiveTheme = val;
+        } else if (type === 'backplate') {
+          state.ghActiveBackplate = val;
+        } else if (type === 'pot') {
+          state.ghActivePot = val;
+        }
+        state.saveState();
+        
+        updateJournalActiveStates();
+        applyGreenhouseThemeClass();
+        applyGhBackplateClass();
+        renderGreenhouse();
+        updateUI();
+      };
+
+      if (btn) {
+        btn.addEventListener('click', handleApply);
+      }
+      item.addEventListener('click', handleApply);
+    });
+  }
+
+  function updateJournalActiveStates() {
+    if (!journalModal) return;
+    const optItems = journalModal.querySelectorAll('.gh-custom-option-item');
+    optItems.forEach(item => {
+      const type = item.getAttribute('data-type');
+      const val = item.getAttribute('data-val');
+      
+      let isActive = false;
+      if (type === 'bg' && state.ghActiveTheme === val) isActive = true;
+      if (type === 'backplate' && state.ghActiveBackplate === val) isActive = true;
+      if (type === 'pot' && state.ghActivePot === val) isActive = true;
+
+      const btn = item.querySelector('.gh-apply-opt-btn');
+      if (isActive) {
+        item.classList.add('active');
+        if (btn) btn.textContent = '適用中';
+      } else {
+        item.classList.remove('active');
+        if (btn) btn.textContent = '適用';
+      }
+    });
+  }
+
+  // --- スロット詳細モーダルのクローズ制御 ---
+  const closeDetailBtn = document.getElementById('gh-close-slot-detail-btn');
+  const detailModal = document.getElementById('gh-slot-detail-modal');
+  if (closeDetailBtn && detailModal) {
+    closeDetailBtn.addEventListener('click', () => {
+      playClickSound();
+      detailModal.style.display = 'none';
+    });
+    detailModal.addEventListener('click', (e) => {
+      if (e.target === detailModal) {
+        detailModal.style.display = 'none';
+      }
+    });
+  }
+
   applyGreenhouseThemeClass();
+  applyGhBackplateClass();
 }
 
 function applyGreenhouseThemeClass() {
   const ghScreen = document.getElementById('screen-greenhouse');
-  const themeSelect = document.getElementById('gh-theme-select');
   if (!ghScreen) return;
 
   const activeTheme = state.ghActiveTheme || 'default';
-  
-  if (themeSelect) themeSelect.value = activeTheme;
-
   ghScreen.className = 'app-screen';
   ghScreen.classList.add(`theme-gh-${activeTheme}`);
+}
+
+function applyGhBackplateClass() {
+  const activeBackplate = state.ghActiveBackplate || 'default';
+  
+  const seedModal = document.querySelector('#gh-plant-seed-modal .result-modal');
+  const detailCard = document.getElementById('gh-slot-detail-card');
+  const recordsModal = document.querySelector('#gh-records-modal .result-modal');
+  const breedResultModal = document.querySelector('#gh-breed-result-modal .result-modal');
+  
+  const els = [seedModal, detailCard, recordsModal, breedResultModal];
+  
+  els.forEach(el => {
+    if (el) {
+      el.classList.remove('backplate-default', 'backplate-ivy', 'backplate-wood');
+      el.classList.add(`backplate-${activeBackplate}`);
+    }
+  });
+}
+
+function openSlotDetailModal(slotId) {
+  const slot = state.ghSlots.find(s => s.slotId === slotId);
+  if (!slot || slot.status === 'empty') return;
+
+  const modal = document.getElementById('gh-slot-detail-modal');
+  const plantNameEl = document.getElementById('gh-detail-plant-name');
+  const scientificEl = document.getElementById('gh-detail-plant-scientific');
+  const plantVisualEl = document.getElementById('gh-detail-plant-visual');
+  const potVisualEl = document.getElementById('gh-detail-pot-visual');
+  
+  const progressSection = document.getElementById('gh-detail-progress-section');
+  const progressText = document.getElementById('gh-detail-progress-text');
+  const progressFill = document.getElementById('gh-detail-progress-fill');
+  
+  const harvestSection = document.getElementById('gh-detail-harvest-section');
+  const harvestPoints = document.getElementById('gh-detail-harvest-points');
+  
+  const actionsGrowing = document.getElementById('gh-detail-actions-growing');
+  const actionsMature = document.getElementById('gh-detail-actions-mature');
+
+  if (!modal) return;
+
+  const spec = state.getPlantSpec(slot.plantId);
+  plantNameEl.textContent = spec?.name || '謎の植物';
+  scientificEl.textContent = spec?.scientificName || 'Incertae sedis';
+  
+  // Visuals
+  plantVisualEl.innerHTML = getPlantHtml(slot.plantId, slot.status === 'mature' ? 4 : slot.currentStage);
+  potVisualEl.innerHTML = getPotHtml(state.ghActivePot || 'default');
+
+  applyGhBackplateClass();
+
+  if (slot.status === 'growing') {
+    progressSection.style.display = 'block';
+    harvestSection.style.display = 'none';
+    actionsGrowing.style.display = 'flex';
+    actionsMature.style.display = 'none';
+
+    progressText.textContent = `${Math.floor(slot.growthProgress)}%`;
+    progressFill.style.width = `${slot.growthProgress}%`;
+
+    // Clone buttons to remove previous listeners
+    const waterBtn = document.getElementById('gh-detail-water-btn');
+    const newWaterBtn = waterBtn.cloneNode(true);
+    waterBtn.parentNode.replaceChild(newWaterBtn, waterBtn);
+
+    const fertilizerBtn = document.getElementById('gh-detail-fertilizer-btn');
+    const newFertilizerBtn = fertilizerBtn.cloneNode(true);
+    fertilizerBtn.parentNode.replaceChild(newFertilizerBtn, fertilizerBtn);
+
+    // Re-bind actions
+    newWaterBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+      startWaterGame(slotId);
+    });
+
+    newFertilizerBtn.addEventListener('click', () => {
+      playClickSound();
+      const res = state.applyFertilizer(slotId);
+      if (res.success) {
+        if (soundEnabled) audio.playSuccess();
+        updateUI();
+        renderGreenhouse();
+        openSlotDetailModal(slotId);
+      } else {
+        alert(res.reason);
+      }
+    });
+
+  } else if (slot.status === 'mature') {
+    progressSection.style.display = 'none';
+    harvestSection.style.display = 'block';
+    actionsGrowing.style.display = 'none';
+    actionsMature.style.display = 'flex';
+
+    harvestPoints.textContent = Math.floor(slot.accumulatedPoints);
+
+    // Harvest button listener
+    const harvestBtn = document.getElementById('gh-detail-harvest-btn');
+    const newHarvestBtn = harvestBtn.cloneNode(true);
+    harvestBtn.parentNode.replaceChild(newHarvestBtn, harvestBtn);
+
+    newHarvestBtn.addEventListener('click', () => {
+      playClickSound();
+      const slotEl = document.querySelector(`.gh-slot[data-slot-id="${slotId}"]`);
+      if (slotEl) {
+        triggerPointsFloatEffect(slotEl, Math.floor(slot.accumulatedPoints));
+      }
+      selectedBreedSlots = selectedBreedSlots.filter(id => id !== slotId);
+      const res = state.harvestSlot(slotId);
+      if (res.success) {
+        if (soundEnabled) audio.playSuccess();
+        modal.style.display = 'none';
+        updateUI();
+        renderGreenhouse();
+      }
+    });
+
+    // Breeding checkbox listener
+    const breedCheck = document.getElementById('gh-detail-breed-check');
+    const isChecked = selectedBreedSlots.includes(slotId);
+    breedCheck.checked = isChecked;
+
+    const newBreedCheck = breedCheck.cloneNode(true);
+    breedCheck.parentNode.replaceChild(newBreedCheck, breedCheck);
+
+    newBreedCheck.addEventListener('change', () => {
+      playClickSound();
+      const checked = newBreedCheck.checked;
+      if (checked) {
+        if (selectedBreedSlots.length >= 2) {
+          alert('⚠️ 交配に選べるのは一度に2つのプランターまでニャ！');
+          newBreedCheck.checked = false;
+          return;
+        }
+        if (!selectedBreedSlots.includes(slotId)) {
+          selectedBreedSlots.push(slotId);
+        }
+      } else {
+        selectedBreedSlots = selectedBreedSlots.filter(id => id !== slotId);
+      }
+      syncBreedingPanel();
+      renderGreenhouse();
+    });
+  }
+
+  modal.style.display = 'flex';
 }
 
 function triggerPointsFloatEffect(element, points) {
@@ -2415,7 +2748,6 @@ function renderCultivationRecords() {
 
 function renderGreenhouse() {
   const gridContainer = document.getElementById('gh-slots-grid');
-  const potSelect = document.getElementById('gh-pot-select');
   const inventoryBar = document.getElementById('gh-seeds-inventory-bar');
   if (!gridContainer) return;
 
@@ -2438,8 +2770,6 @@ function renderGreenhouse() {
   }
 
   const currentPotSkin = state.ghActivePot || 'default';
-  if (potSelect) potSelect.value = currentPotSkin;
-
   const slotCount = state.ghSlotCount || 3;
 
   for (let i = 1; i <= 6; i++) {
@@ -2454,7 +2784,7 @@ function renderGreenhouse() {
       const cost = GREENHOUSE_CONFIG.slotUnlockCosts[i] || 1000;
       slotEl.innerHTML = `
         <div class="gh-lock-icon">🔒</div>
-        <div style="font-weight: 800; font-size: 12px; margin-bottom: 2px;">第${i}スロット</div>
+        <div style="font-weight: 800; font-size: 11px; margin-bottom: 2px;">第${i}スロット</div>
         <div class="gh-lock-cost">🪙 ${cost.toLocaleString()} pts</div>
       `;
 
@@ -2479,142 +2809,40 @@ function renderGreenhouse() {
 
     if (slot.status === 'empty') {
       slotEl.classList.add('empty');
+      const potHtml = getPotHtml(currentPotSkin);
       slotEl.innerHTML = `
-        <div style="font-size: 11px; font-weight: bold; color: var(--color-text-muted); margin-bottom: 10px;">スロット ${i} (空)</div>
-        <button class="gh-plant-btn" data-slot-id="${i}">🌱 タネをまく</button>
+        <div class="gh-plant-visual" style="opacity: 0.15;">🌱</div>
+        <div class="gh-pot-visual">${potHtml}</div>
       `;
 
-      slotEl.querySelector('.gh-plant-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
+      slotEl.addEventListener('click', () => {
+        playClickSound();
         openPlantSeedModal(i);
       });
     }
     else if (slot.status === 'growing') {
       slotEl.classList.add('growing');
-      const spec = state.getPlantSpec(slot.plantId);
       const potHtml = getPotHtml(currentPotSkin);
-
       slotEl.innerHTML = `
-        <div class="gh-slot-left">
-          <div class="gh-plant-visual">
-            ${getPlantHtml(slot.plantId, slot.currentStage)}
-          </div>
-          <div class="gh-pot-visual">${potHtml}</div>
-        </div>
-        <div class="gh-slot-right">
-          <div class="gh-plant-name">${spec?.name || '謎の草'}</div>
-          
-          <div class="gh-progress-container">
-            <div class="gh-progress-bar">
-              <div class="gh-progress-fill" style="width: ${slot.growthProgress}%"></div>
-            </div>
-            <div class="gh-progress-text">成長度: ${Math.floor(slot.growthProgress)}%</div>
-          </div>
-
-          <div class="gh-actions-row">
-            <button class="gh-action-btn-mini gh-water-btn" data-slot-id="${i}">
-              💧 水やり
-              <span class="gh-btn-sublabel">ミニ</span>
-            </button>
-            <button class="gh-action-btn-mini gh-fertilizer-btn" data-slot-id="${i}">
-              ✨ 栄養剤
-              <span class="gh-btn-sublabel">🪙${GREENHOUSE_CONFIG.fertilizerCost}p</span>
-            </button>
-          </div>
-        </div>
+        <div class="gh-plant-visual">${getPlantHtml(slot.plantId, slot.currentStage)}</div>
+        <div class="gh-pot-visual">${potHtml}</div>
       `;
-
-      slotEl.querySelector('.gh-water-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        startWaterGame(i);
-      });
-
-      slotEl.querySelector('.gh-fertilizer-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
+      slotEl.addEventListener('click', () => {
         playClickSound();
-        const res = state.applyFertilizer(i);
-        if (res.success) {
-          if (soundEnabled) audio.playSuccess();
-          updateUI();
-          renderGreenhouse();
-        } else {
-          alert(res.reason);
-        }
+        openSlotDetailModal(i);
       });
     }
     else if (slot.status === 'mature') {
       slotEl.classList.add('mature');
-      const spec = state.getPlantSpec(slot.plantId);
       const potHtml = getPotHtml(currentPotSkin);
-
-      const isChecked = selectedBreedSlots.includes(i);
-      const checkboxHtml = `
-        <label class="gh-breed-checkbox-label" data-slot-id="${i}">
-          <input type="checkbox" class="gh-breed-check" data-slot-id="${i}" ${isChecked ? 'checked' : ''}>
-          🧬 交配
-        </label>
-      `;
-
       slotEl.innerHTML = `
-        ${checkboxHtml}
-        <div class="gh-slot-left">
-          <div class="gh-plant-visual">
-            ${getPlantHtml(slot.plantId, 4)}
-          </div>
-          <div class="gh-pot-visual">${potHtml}</div>
-        </div>
-        <div class="gh-slot-right">
-          <div class="gh-plant-name" style="color: #d97706; margin-bottom: 6px;">💮 開花 (${spec?.name || '新種'})</div>
-          
-          <div class="gh-harvest-box">
-            <div class="gh-accumulated-points">
-              🪙<span class="gh-pts-val">${Math.floor(slot.accumulatedPoints)}</span>p
-            </div>
-            <button class="gh-harvest-btn" data-slot-id="${i}">🧺 収穫</button>
-          </div>
-        </div>
+        <div class="gh-plant-visual">${getPlantHtml(slot.plantId, 4)}</div>
+        <div class="gh-pot-visual">${potHtml}</div>
       `;
-
-      slotEl.querySelector('.gh-harvest-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
+      slotEl.addEventListener('click', () => {
         playClickSound();
-        triggerPointsFloatEffect(slotEl, Math.floor(slot.accumulatedPoints));
-        
-        selectedBreedSlots = selectedBreedSlots.filter(id => id !== i);
-
-        const res = state.harvestSlot(i);
-        if (res.success) {
-          if (soundEnabled) audio.playSuccess();
-          updateUI();
-          renderGreenhouse();
-        }
+        openSlotDetailModal(i);
       });
-
-      const checkLabel = slotEl.querySelector('.gh-breed-checkbox-label');
-      const checkInput = slotEl.querySelector('.gh-breed-check');
-
-      const handleCheckChange = (e) => {
-        e.stopPropagation();
-        playClickSound();
-        const checked = checkInput.checked;
-        if (checked) {
-          if (selectedBreedSlots.length >= 2) {
-            alert('⚠️ 交配に選べるのは一度に2つのプランターまでニャ！');
-            checkInput.checked = false;
-            return;
-          }
-          if (!selectedBreedSlots.includes(i)) {
-            selectedBreedSlots.push(i);
-          }
-        } else {
-          selectedBreedSlots = selectedBreedSlots.filter(id => id !== i);
-        }
-        
-        syncBreedingPanel();
-      };
-
-      checkLabel.addEventListener('click', (e) => e.stopPropagation());
-      checkInput.addEventListener('change', handleCheckChange);
     }
 
     if (slot.isInfested) {
@@ -2773,10 +3001,7 @@ async function runNativeRewardAd() {
 
     await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
       if (rewardEarned) {
-        state.points += 1000;
-        state.saveState();
-        updateUI();
-        alert('🎉 動画の視聴が完了したニャ！\n🪙 1,000 pts を獲得したニャ！😻');
+        handleAdRewardSuccess();
       } else {
         alert('⚠️ 動画の視聴が途中でキャンセルされたニャ。');
       }
@@ -2798,6 +3023,22 @@ async function runNativeRewardAd() {
   } catch (error) {
     console.error('Native AdMob error:', error);
     alert('⚠️ 広告再生中にエラーが発生したニャ。通信状況を確認するか、VPNをONにしている場合はOFFにしてから再度お試しくださいニャ。');
+  }
+}
+
+function handleAdRewardSuccess() {
+  state.points += 1000;
+  const adResult = state.watchAd();
+  updateUI();
+
+  if (soundEnabled) audio.playSuccess();
+  alert('🎉 動画の視聴が完了したニャ！\n🪙 1,000 pts を獲得したニャ！😻');
+
+  if (adResult.newBadges && adResult.newBadges.length > 0) {
+    const unlockedNames = adResult.newBadges.map(b => `【${b.name}】`).join('、');
+    setTimeout(() => {
+      alert(`🎉 新しい研究バッジを獲得したニャ！\n${unlockedNames}\nバッジ画面を確認するニャ！`);
+    }, 500);
   }
 }
 
@@ -2828,13 +3069,113 @@ function runMockRewardAd() {
       clearInterval(interval);
       backdrop.style.display = 'none';
 
-      // Grant points
-      state.points += 1000;
-      state.saveState();
-      updateUI();
-      
-      if (soundEnabled) audio.playSuccess();
-      alert('🎉 動画の視聴が完了したニャ！\n🪙 1,000 pts を獲得したニャ！😻');
+      handleAdRewardSuccess();
     }
   }, 1000);
 }
+
+function handleBackButtonPress() {
+  const lightbox = document.getElementById('lightbox-modal-backdrop');
+  if (lightbox && lightbox.style.display !== 'none') {
+    lightbox.style.display = 'none';
+    return true;
+  }
+  
+  const adMock = document.getElementById('ad-mock-modal-backdrop');
+  if (adMock && adMock.style.display !== 'none') {
+    adMock.style.display = 'none';
+    return true;
+  }
+
+  /* [OFF]
+  const ghSlotDetail = document.getElementById('gh-slot-detail-modal');
+  if (ghSlotDetail && ghSlotDetail.style.display !== 'none') {
+    ghSlotDetail.style.display = 'none';
+    return true;
+  }
+
+  const ghBreedResult = document.getElementById('gh-breed-result-modal');
+  if (ghBreedResult && ghBreedResult.style.display !== 'none') {
+    ghBreedResult.style.display = 'none';
+    return true;
+  }
+
+  const ghJournal = document.getElementById('gh-journal-modal');
+  if (ghJournal && ghJournal.style.display !== 'none') {
+    ghJournal.style.display = 'none';
+    return true;
+  }
+
+  const ghRecords = document.getElementById('gh-records-modal');
+  if (ghRecords && ghRecords.style.display !== 'none') {
+    ghRecords.style.display = 'none';
+    return true;
+  }
+
+  const ghPlantSeed = document.getElementById('gh-plant-seed-modal');
+  if (ghPlantSeed && ghPlantSeed.style.display !== 'none') {
+    ghPlantSeed.style.display = 'none';
+    return true;
+  }
+  */
+
+  const logoBadge = document.getElementById('logo-badge-modal-backdrop');
+  if (logoBadge && logoBadge.style.display !== 'none') {
+    logoBadge.style.display = 'none';
+    return true;
+  }
+
+  const titleSelect = document.getElementById('title-select-modal-backdrop');
+  if (titleSelect && titleSelect.style.display !== 'none') {
+    titleSelect.style.display = 'none';
+    return true;
+  }
+
+  const shopModal = document.getElementById('shop-modal-backdrop');
+  if (shopModal && shopModal.style.display !== 'none') {
+    shopModal.style.display = 'none';
+    return true;
+  }
+
+  const levelupPopup = document.getElementById('levelup-popup-backdrop');
+  if (levelupPopup && levelupPopup.style.display !== 'none') {
+    levelupPopup.style.display = 'none';
+    return true;
+  }
+
+  const zukanDetail = document.getElementById('zukan-detail-backdrop');
+  if (zukanDetail && zukanDetail.style.display !== 'none') {
+    zukanDetail.style.display = 'none';
+    return true;
+  }
+
+  const resultModal = document.getElementById('result-modal-backdrop');
+  if (resultModal && resultModal.style.display !== 'none') {
+    resultModal.style.display = 'none';
+    activeScanResult = null;
+    startScanner();
+    return true;
+  }
+
+  const settingsModal = document.getElementById('settings-modal-backdrop');
+  if (settingsModal && settingsModal.style.display !== 'none') {
+    settingsModal.style.display = 'none';
+    return true;
+  }
+
+  return false;
+}
+
+function setupBackButton() {
+  if (Capacitor.isNativePlatform()) {
+    App.addListener('backButton', () => {
+      const closed = handleBackButtonPress();
+      if (!closed) {
+        if (confirm('アプリを終了しますか？')) {
+          App.exitApp();
+        }
+      }
+    });
+  }
+}
+

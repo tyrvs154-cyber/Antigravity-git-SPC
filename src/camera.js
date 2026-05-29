@@ -1,6 +1,7 @@
 // Camera and scan handler for Hanamikke
 
 import { FALLBACK_PLANTS } from './plantsData.js';
+import { state } from './state.js';
 
 class CameraHandler {
   constructor() {
@@ -8,6 +9,7 @@ class CameraHandler {
     this.videoElement = null;
     this.canvasElement = null;
     this.selectedSampleImage = null; // Store dataUrl if user chooses a sample
+    this.aspectRatio = '1:1'; // Default aspect ratio ('1:1', '3:4', '9:16')
   }
 
   init(videoEl, canvasEl) {
@@ -24,11 +26,12 @@ class CameraHandler {
     }
 
     try {
+      // Request maximum resolution (4K target) to get maximum device resolution output
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment', // Use rear camera if available
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 3840 },
+          height: { ideal: 2160 }
         },
         audio: false
       });
@@ -39,11 +42,14 @@ class CameraHandler {
       }
       return true;
     } catch (error) {
-      console.warn('Could not start rear camera, trying default:', error);
+      console.warn('Could not start rear camera with high res, trying fallback:', error);
       try {
-        // Fallback to any camera
+        // Fallback to any camera with high resolution request
         this.stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: {
+            width: { ideal: 3840 },
+            height: { ideal: 2160 }
+          },
           audio: false
         });
         if (this.videoElement) {
@@ -52,8 +58,22 @@ class CameraHandler {
         }
         return true;
       } catch (err2) {
-        console.error('Camera access rejected or unavailable:', err2);
-        throw new Error('カメラの起動に失敗しましたニャ。権限を許可するか、ファイルアップロードをお試しください。');
+        console.warn('Could not start high resolution fallback, trying standard fallback:', err2);
+        try {
+          // Absolute fallback
+          this.stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+          if (this.videoElement) {
+            this.videoElement.srcObject = this.stream;
+            this.videoElement.style.display = 'block';
+          }
+          return true;
+        } catch (err3) {
+          console.error('Camera access rejected or unavailable:', err3);
+          throw new Error('カメラの起動に失敗しましたニャ。権限を許可するか、ファイルアップロードをお試しください。');
+        }
       }
     }
   }
@@ -94,8 +114,13 @@ class CameraHandler {
 
     const video = this.videoElement;
 
-    // Generate high resolution image (max 1080px) for Zukan display
-    const highRes = this.resizeAndCompress(video, 1080, 0.80);
+    // Determine quality options based on scanPhotoQuality state
+    const isMax = state.scanPhotoQuality === 'max';
+    const highResDimension = isMax ? Infinity : 1080;
+    const highResQuality = isMax ? 0.95 : 0.80;
+
+    // Generate high resolution image for Zukan display
+    const highRes = this.resizeAndCompress(video, highResDimension, highResQuality);
     // Generate low resolution image (max 480px) for AI upload
     const lowRes = this.resizeAndCompress(video, 480, 0.60);
 
@@ -103,7 +128,7 @@ class CameraHandler {
   }
 
   /**
-   * Scales and compresses a video or image source on an offscreen canvas.
+   * Scales, crops, and compresses a video or image source on an offscreen canvas.
    */
   resizeAndCompress(source, maxDimension, quality) {
     const canvas = document.createElement('canvas');
@@ -123,22 +148,55 @@ class CameraHandler {
       origHeight = source.height || 480;
     }
 
-    let newWidth = origWidth;
-    let newHeight = origHeight;
+    // Determine target aspect ratio as a number
+    let ratioVal = 1.0;
+    if (this.aspectRatio === '3:4') {
+      ratioVal = 3 / 4;
+    } else if (this.aspectRatio === '9:16') {
+      ratioVal = 9 / 16;
+    } else {
+      ratioVal = 1.0; // Default 1:1
+    }
 
-    if (origWidth > maxDimension || origHeight > maxDimension) {
-      if (origWidth > origHeight) {
+    // Calculate crop dimensions to match the target aspect ratio
+    let cropWidth = origWidth;
+    let cropHeight = origHeight;
+    let sx = 0;
+    let sy = 0;
+
+    if (origWidth / origHeight > ratioVal) {
+      // Source is wider than target aspect ratio -> Crop width (left and right)
+      cropHeight = origHeight;
+      cropWidth = Math.round(origHeight * ratioVal);
+      sx = Math.round((origWidth - cropWidth) / 2);
+      sy = 0;
+    } else {
+      // Source is taller than target aspect ratio -> Crop height (top and bottom)
+      cropWidth = origWidth;
+      cropHeight = Math.round(origWidth / ratioVal);
+      sx = 0;
+      sy = Math.round((origHeight - cropHeight) / 2);
+    }
+
+    // Calculate output dimensions
+    let newWidth = cropWidth;
+    let newHeight = cropHeight;
+
+    if (maxDimension !== Infinity && (cropWidth > maxDimension || cropHeight > maxDimension)) {
+      if (cropWidth > cropHeight) {
         newWidth = maxDimension;
-        newHeight = Math.round((origHeight * maxDimension) / origWidth);
+        newHeight = Math.round((cropHeight * maxDimension) / cropWidth);
       } else {
         newHeight = maxDimension;
-        newWidth = Math.round((origWidth * maxDimension) / origHeight);
+        newWidth = Math.round((cropWidth * maxDimension) / cropHeight);
       }
     }
 
     canvas.width = newWidth;
     canvas.height = newHeight;
-    ctx.drawImage(source, 0, 0, newWidth, newHeight);
+
+    // Draw the cropped region from source to destination canvas
+    ctx.drawImage(source, sx, sy, cropWidth, cropHeight, 0, 0, newWidth, newHeight);
 
     return canvas.toDataURL('image/jpeg', quality);
   }
@@ -152,7 +210,11 @@ class CameraHandler {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        const highRes = this.resizeAndCompress(img, 1080, 0.80);
+        const isMax = state.scanPhotoQuality === 'max';
+        const highResDimension = isMax ? Infinity : 1080;
+        const highResQuality = isMax ? 0.95 : 0.80;
+
+        const highRes = this.resizeAndCompress(img, highResDimension, highResQuality);
         const lowRes = this.resizeAndCompress(img, 480, 0.60);
         resolve({ highRes, lowRes });
       };

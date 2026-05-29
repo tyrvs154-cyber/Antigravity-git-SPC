@@ -183,6 +183,22 @@
           <span class="scan-mode-indicator" id="scan-mode-lbl">デモモード</span>
         </div>
 
+        <!-- Camera Settings Toggle Bar (Aspect & Quality) -->
+        <div class="camera-settings-bar" style="display: flex; justify-content: space-between; align-items: center; margin: 10px 15px; gap: 10px; z-index: 5;">
+          <!-- Aspect Ratios -->
+          <div class="aspect-ratio-selector" style="display: flex; gap: 4px; background-color: var(--color-bg-light); border: 1.5px solid var(--color-border); padding: 3px; border-radius: var(--border-radius-sm);">
+            <button class="aspect-btn" data-ratio="1:1" style="font-size: 11px; font-weight: bold; border: 1px solid transparent; padding: 4px 10px; border-radius: 4px; background: none; cursor: pointer; color: var(--color-text-dark);">1:1</button>
+            <button class="aspect-btn" data-ratio="3:4" style="font-size: 11px; font-weight: bold; border: 1px solid transparent; padding: 4px 10px; border-radius: 4px; background: none; cursor: pointer; color: var(--color-text-dark);">3:4</button>
+            <button class="aspect-btn" data-ratio="9:16" style="font-size: 11px; font-weight: bold; border: 1px solid transparent; padding: 4px 10px; border-radius: 4px; background: none; cursor: pointer; color: var(--color-text-dark);">9:16</button>
+          </div>
+
+          <!-- Quality Toggle -->
+          <button class="quality-toggle-btn" id="scan-quality-toggle-btn" style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; background-color: var(--color-bg-light); border: 1.5px solid var(--color-border); padding: 5px 12px; border-radius: var(--border-radius-sm); cursor: pointer; color: var(--color-text-dark); transition: all 0.2s;">
+            <span id="scan-quality-icon">📷</span>
+            <span id="scan-quality-lbl">標準画質</span>
+          </button>
+        </div>
+
         <!-- Viewfinder Area -->
         <div class="scanner-viewfinder-container">
           <div class="scanner-border-corners"></div>
@@ -329,7 +345,7 @@
         </div>
       </section>
 
-      <!-- SCREEN: GREENHOUSE (温室) -->
+      <!-- SCREEN: GREENHOUSE (温室) [OFF]
       <section id="screen-greenhouse" class="app-screen">
         <div class="greenhouse-header-bar">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -345,11 +361,11 @@
         </div>
 
         <div class="gh-seeds-inventory" id="gh-seeds-inventory-bar">
-          <!-- JSで所持タネリストを描画ニャ -->
+          [comment: JSで所持タネリストを描画ニャ]
         </div>
  
         <div class="greenhouse-container">
-          <!-- Greenhouse Customization -->
+          [comment: Greenhouse Customization]
           <div class="gh-custom-panel">
             <div class="gh-custom-item">
               <label>🏞️ テーマ</label>
@@ -369,12 +385,12 @@
             </div>
           </div>
 
-          <!-- Glasshouse Grid -->
+          [comment: Glasshouse Grid]
           <div class="gh-grid" id="gh-slots-grid">
-            <!-- Dynamically populated slots -->
+            [comment: Dynamically populated slots]
           </div>
 
-          <!-- Breeding Lab Panel -->
+          [comment: Breeding Lab Panel]
           <div class="gh-breed-panel" id="gh-breed-control-panel">
             <div class="gh-breed-header">
               <h4>🔬 不思議な交配実験室</h4>
@@ -395,6 +411,7 @@
           </div>
         </div>
       </section>
+      -->
     </main>
 
     <!-- Bottom Navigation Bar -->
@@ -415,10 +432,12 @@
         <span class="nav-icon">🏅</span>
         <span class="nav-lbl">バッジ</span>
       </button>
+      <!-- [OFF]
       <button class="nav-item" data-screen="greenhouse">
         <span class="nav-icon">🌳</span>
         <span class="nav-lbl">温室</span>
       </button>
+      -->
     </nav>
   </div>
 
@@ -814,6 +833,10 @@
         </div>
 
         <p id="shop-desc-text" style="font-size: 11.5px; color: var(--color-text-muted); margin-bottom: 12px; text-align: center; line-height: 1.4;">ポイントを消費して、図鑑の写真に飾れる可愛い「フォトフレーム」を交換できるニャ！<br>(※交換しても研究レベルは下がらないニャ！)</p>
+        
+        <!-- Shop Items Grid -->
+        <div class="shop-items-grid" id="shop-items-grid" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+          <!-- Dynamically populated -->
         </div>
       </div>
     </div>
@@ -831,7 +854,8 @@
     </div>
   </div>
 
-  <!-- MODAL: PLANT SEED (種まきモーダル) -->
+  <!-- MODAL: GREENHOUSE FEATURES DISABLED [OFF]
+  [comment: MODAL: PLANT SEED (種まきモーダル)]
   <div class="result-backdrop" id="gh-plant-seed-modal" style="display: none; z-index: 1000;">
     <div class="result-modal" style="max-width: 90%; width: 360px; padding: 20px; border-radius: var(--border-radius-md); box-shadow: var(--shadow-md);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1.5px solid var(--color-border); padding-bottom: 8px; width: 100%;">
@@ -840,35 +864,28 @@
       </div>
       <p style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.4;">植える種を選択してください。成長するとポイントを自動生産しますニャ！</p>
       <div id="gh-seeds-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; width: 100%;">
-        <!-- Dynamically populated seed list -->
       </div>
     </div>
   </div>
 
-  <!-- MODAL: BREED RESULT (交配結果モーダル) -->
+  [comment: MODAL: BREED RESULT (交配結果モーダル)]
   <div class="result-backdrop" id="gh-breed-result-modal" style="display: none; z-index: 1010; background: rgba(0,0,0,0.85);">
     <div class="result-modal" style="max-width: 90%; width: 420px; text-align: center; padding: 25px 20px; overflow: hidden; position: relative; border-radius: var(--border-radius-md); border: 2px solid #ffeb3b; background: #2d2621;">
-      <!-- Confetti inside modal -->
       <div class="result-confetti-holder" id="gh-breed-confetti" style="pointer-events: none;"></div>
-      
       <div style="font-size: 14px; font-weight: 900; color: #ffeb3b; text-shadow: 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 5px; letter-spacing: 1px;">✨ NEW HYBRID DISCOVERED! ✨</div>
       <h2 style="color: white; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 22px; font-weight: 900;">🎉 新種誕生ニャ！ 🎉</h2>
-      
       <div class="wt-visual-container big" style="margin: 20px auto; width: 130px; height: 130px; font-size: 72px; border-color: #ffeb3b; background: radial-gradient(circle, #fff 40%, #fff9c4 100%); animation: floatBig 4s ease-in-out infinite alternate; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 4px solid #ffeb3b;">
         <span id="gh-breed-result-emoji">💮</span>
       </div>
-      
       <h3 id="gh-breed-result-name" style="color: #ffeb3b; font-size: 20px; font-weight: 900; margin-bottom: 15px; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">サクラポポ</h3>
-      
       <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 15px; color: #f0f0f0; font-size: 12.5px; line-height: 1.6; text-align: left; margin-bottom: 20px; backdrop-filter: blur(4px); width: 100%;">
         <p id="gh-breed-result-desc" style="margin: 0; font-weight: 500;">ニャルド博士のメモ: サクラの華やかさとタンポポのタフさが合体したニャ！風に乗って桜色の綿毛が舞い散る美しい姿は必見ニャん。</p>
       </div>
-
       <button class="primary-btn" id="gh-breed-result-close-btn" style="background: #ffeb3b; color: #3e2723; border: none; font-weight: bold; padding: 10px 40px; border-radius: 20px; cursor: pointer; transition: transform 0.2s;">栽培記録に保存するニャ</button>
     </div>
   </div>
 
-  <!-- MODAL: CULTIVATION RECORDS (栽培記録モーダル) -->
+  [comment: MODAL: CULTIVATION RECORDS (栽培記録モーダル)]
   <div class="result-backdrop" id="gh-records-modal" style="display: none; z-index: 1000;">
     <div class="result-modal" style="max-width: 95%; width: 460px; padding: 20px; height: 80vh; display: flex; flex-direction: column; border-radius: var(--border-radius-md);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1.5px solid var(--color-border); padding-bottom: 8px; width: 100%;">
@@ -877,10 +894,10 @@
       </div>
       <p style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.4; width: 100%;">交配によって発見した、あなただけの新種植物の図鑑ニャ。</p>
       <div id="gh-records-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; width: 100%; padding-bottom: 10px;">
-        <!-- Dynamically populated hybrid cards -->
       </div>
     </div>
   </div>
+  -->
 
   <script type="module" src="/src/main.js"></script>
 </body>

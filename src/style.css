@@ -263,6 +263,19 @@ body {
   align-items: flex-start;
   gap: 14px;
   margin-bottom: 20px;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.nyan-greeting-card:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.02);
+}
+
+.nyan-greeting-card:active {
+  transform: translateY(1px) scale(0.98);
+  filter: brightness(0.97);
 }
 
 .nyan-avatar-container {
@@ -815,6 +828,33 @@ body {
   background-color: rgba(0,0,0,0.8);
 }
 
+/* Aspect Ratio Selectors */
+.aspect-btn {
+  transition: var(--transition-bounce);
+}
+.aspect-btn:active {
+  transform: scale(0.95);
+}
+.aspect-btn.active {
+  background-color: var(--color-primary) !important;
+  color: white !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Quality Toggle Buttons */
+.quality-toggle-btn {
+  transition: var(--transition-bounce);
+}
+.quality-toggle-btn:active {
+  transform: scale(0.95);
+}
+.quality-toggle-btn.max {
+  background-color: var(--color-yellow-dark) !important;
+  color: white !important;
+  border-color: var(--color-yellow-dark) !important;
+}
+
+
 /* Scanning green laser line */
 .scanner-laser-line {
   position: absolute;
@@ -1339,10 +1379,11 @@ body {
 
 .detail-sheet {
   background-color: var(--color-bg-warm);
-  border-top-left-radius: var(--border-radius-lg);
-  border-top-right-radius: var(--border-radius-lg);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   width: 100%;
-  max-height: 85%;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -12px 40px rgba(0,0,0,0.15);
@@ -1356,6 +1397,7 @@ body {
 }
 
 .sheet-drag-bar {
+  display: none !important;
   width: 40px;
   height: 4px;
   background-color: var(--color-border);
@@ -1779,10 +1821,10 @@ body {
 
 .result-modal {
   background-color: var(--color-bg-warm);
-  border-top-left-radius: var(--border-radius-lg);
-  border-top-right-radius: var(--border-radius-lg);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   width: 100%;
-  height: 90%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -10px 36px rgba(0,0,0,0.15);
@@ -2096,7 +2138,7 @@ body {
   border-top-left-radius: var(--border-radius-lg);
   border-top-right-radius: var(--border-radius-lg);
   width: 100%;
-  height: 80%;
+  height: auto;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -10px 36px rgba(0,0,0,0.15);
@@ -4318,7 +4360,7 @@ body {
 
 /* Dr. Nyan Speech Bubble */
 .nyan-speech-bubble p, #nyan-home-speech {
-  font-size: calc(13px * var(--font-scale)) !important; /* 13px -> 26px */
+  font-size: calc(11.5px * var(--font-scale)) !important; /* Slightly smaller comments */
   line-height: 1.4 !important;
 }
 
@@ -4358,8 +4400,12 @@ body {
 }
 
 /* Section Titles */
-.scan-header-bar h2, .zukan-header-bar h2, .badges-header-bar h2, .greenhouse-header-bar h2, .settings-header h3 {
+.scan-header-bar h2, .zukan-header-bar h2, .badges-header-bar h2, .greenhouse-header-bar h2 {
   font-size: calc(18px * var(--font-scale)) !important;
+}
+
+.settings-header h3 {
+  font-size: calc(14.5px * var(--font-scale)) !important;
 }
 
 /* Buttons */
@@ -4374,8 +4420,13 @@ body {
 }
 
 /* Modal text descriptions */
-.settings-explanation p, .api-help-text, .result-nyan-comment p, .result-details-text p, .sheet-desc-card p, .comment-speech p {
+.settings-explanation p, .api-help-text, .result-details-text p, .sheet-desc-card p, .comment-speech p {
   font-size: calc(11px * var(--font-scale) * 1.05) !important; /* 約 23px */
+  line-height: 1.4 !important;
+}
+
+.result-nyan-comment p {
+  font-size: calc(10px * var(--font-scale) * 1.05) !important; /* Slightly smaller comment */
   line-height: 1.4 !important;
 }
 
@@ -4386,10 +4437,21 @@ input[type="text"], input[type="password"], select, textarea {
   padding: 8px 12px !important;
 }
 
+#api-key-input {
+  font-size: calc(9.5px * var(--font-scale)) !important;
+  padding: 6px 10px !important;
+}
+
 /* モーダルのスクロール領域と高さの安全確保 */
-.settings-scroll-content, .result-modal-scroll {
-  max-height: 50vh !important; /* 巨大な文字でもスクロールでアクセスできるように */
+.settings-scroll-content {
+  max-height: 60vh !important; /* 巨大な文字でもスクロールでアクセスできるように */
   overflow-y: auto !important;
+}
+
+.result-modal-scroll {
+  max-height: none !important;
+  overflow-y: auto !important;
+  flex-grow: 1 !important;
 }
 
 .sheet-scroll-content {
@@ -4398,14 +4460,18 @@ input[type="text"], input[type="password"], select, textarea {
   flex-grow: 1 !important;
 }
 
-.result-modal, .settings-modal, .detail-sheet {
-  max-height: 90vh !important;
+.result-modal, .detail-sheet {
+  max-height: 100vh !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
   display: flex !important;
   flex-direction: column !important;
 }
 
-.detail-sheet {
-  height: 90vh !important;
+.settings-modal {
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .result-modal-actions {
@@ -4624,6 +4690,192 @@ input[type="text"], input[type="password"], select, textarea {
   padding: 4px !important;
   color: var(--color-primary-dark) !important;
   z-index: 20 !important;
+}
+
+/* Antique / Botanical Fonts */
+.gh-shippori, 
+#screen-greenhouse h2, 
+#screen-greenhouse h4,
+#gh-journal-modal h3,
+#gh-journal-modal .gh-journal-tab,
+#gh-slot-detail-modal h3,
+#gh-plant-seed-modal h3,
+#gh-records-modal h3,
+#gh-breed-control-panel h4 {
+  font-family: 'Shippori Mincho B1', serif !important;
+  font-weight: 700 !important;
+}
+
+.gh-latin,
+#gh-slot-detail-modal #gh-detail-plant-scientific {
+  font-family: 'Playfair Display', serif !important;
+  font-style: italic !important;
+}
+
+/* Greenhouse layout restyling to make slots borderless and rest on shelves */
+#screen-greenhouse {
+  background-size: cover !important;
+  background-position: center bottom !important;
+}
+
+#screen-greenhouse .greenhouse-container {
+  padding: 10px !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Remove card/container layouts */
+#screen-greenhouse .gh-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 20px 10px !important;
+  margin-top: 30px !important;
+  background: none !important;
+}
+
+#screen-greenhouse .gh-slot {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  min-height: 140px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  padding: 0 0 10px 0 !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: transform 0.2s !important;
+}
+
+#screen-greenhouse .gh-slot:active {
+  transform: scale(0.95) !important;
+}
+
+#screen-greenhouse .gh-slot.locked {
+  justify-content: center !important;
+  opacity: 0.65 !important;
+}
+
+/* Hide all text inside slots */
+#screen-greenhouse .gh-slot .gh-progress-container,
+#screen-greenhouse .gh-slot .gh-progress-bar,
+#screen-greenhouse .gh-slot .gh-progress-text,
+#screen-greenhouse .gh-slot .gh-plant-name,
+#screen-greenhouse .gh-slot .gh-actions-row,
+#screen-greenhouse .gh-slot .gh-harvest-box,
+#screen-greenhouse .gh-slot .gh-accumulated-points,
+#screen-greenhouse .gh-slot .gh-breed-checkbox-label,
+#screen-greenhouse .gh-slot .gh-action-btn-mini {
+  display: none !important;
+}
+
+/* Slot locked icon positioning */
+#screen-greenhouse .gh-slot.locked .gh-lock-icon {
+  font-size: 24px !important;
+  color: #8c6239 !important;
+  margin-bottom: 5px !important;
+}
+#screen-greenhouse .gh-slot.locked .gh-lock-cost {
+  font-family: 'Shippori Mincho B1', serif !important;
+  font-size: 9px !important;
+  background: rgba(140, 98, 57, 0.15) !important;
+  color: #5c3c1e !important;
+  border: 1px solid #8c6239 !important;
+}
+
+/* Sparkle / glow effect for mature plants on shelves */
+#screen-greenhouse .gh-slot.mature .gh-plant-visual::after {
+  content: '✨';
+  position: absolute;
+  font-size: 14px;
+  top: -8px;
+  right: -8px;
+  animation: pulseSlow 1.5s infinite alternate;
+}
+
+/* Botanical backplates */
+.backplate-default {
+  background-color: #fdfaf2 !important;
+  background-image: radial-gradient(#fff9e6 1px, transparent 0) !important;
+  background-size: 24px 24px !important;
+  border: 6px double #8c6239 !important;
+  color: #4a2f15 !important;
+}
+
+.backplate-ivy {
+  background-color: #f6faf4 !important;
+  border: 4px solid #7fa998 !important;
+  position: relative !important;
+  color: #21352a !important;
+}
+.backplate-ivy::before {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px; right: 4px; bottom: 4px;
+  border: 1.5px dashed rgba(127, 169, 152, 0.4) !important;
+  pointer-events: none !important;
+}
+.backplate-ivy::after {
+  content: '🌿';
+  position: absolute;
+  font-size: 16px;
+  top: 8px;
+  left: 8px;
+  opacity: 0.85;
+}
+
+.backplate-wood {
+  background-color: #fbf5eb !important;
+  border: 10px solid #8b5a2b !important;
+  border-image: linear-gradient(135deg, #a67c52, #5c3c1e) 10 !important;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.15) !important;
+  color: #3e250f !important;
+}
+
+/* Custom Settings Field Journal style overrides */
+.gh-journal-book {
+  animation: slideUp 0.35s cubic-bezier(0.1, 0.8, 0.2, 1) !important;
+}
+
+.gh-journal-tab {
+  transition: all 0.2s ease !important;
+}
+
+.gh-journal-tab.active {
+  background: #fdfaf2 !important;
+  border-bottom: 2px solid transparent !important;
+  color: #5c3c1e !important;
+  font-weight: 900 !important;
+}
+
+.gh-custom-option-item {
+  transition: all 0.2s ease !important;
+}
+
+.gh-custom-option-item:hover {
+  border-color: #8c6239 !important;
+  background-color: #fcf9f2 !important;
+  transform: translateY(-1px);
+}
+
+.gh-custom-option-item.active {
+  background-color: #f7eed8 !important;
+  border-color: #8c6239 !important;
+  box-shadow: inset 0 0 4px rgba(140, 98, 57, 0.15);
+}
+
+.gh-apply-opt-btn {
+  background-color: #8c6239 !important;
+  color: white !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+.gh-apply-opt-btn:hover {
+  background-color: #73502e !important;
+}
+.gh-apply-opt-btn:active {
+  transform: scale(0.95);
 }
 
 
