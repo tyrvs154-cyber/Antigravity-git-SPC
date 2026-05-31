@@ -1043,40 +1043,57 @@ async function savePhotoToSharedStorage(plantData) {
   if (!Capacitor.isNativePlatform()) return null;
   if (!state.autoSaveToDevice) return null;
 
-  try {
-    // Check permission (for Android 9 and below)
-    const permStatus = await MediaSave.checkPermissions();
-    if (permStatus.storage !== 'granted') {
-      const reqStatus = await MediaSave.requestPermissions();
-      if (reqStatus.storage !== 'granted') {
-        console.warn('MediaSave: Permission denied by user');
-        alert('写真の保存に必要なストレージアクセス権限が拒否されたため、端末への保存はスキップされたニャ。');
-        return null;
-      }
-    }
+  const scientificName = plantData.scientificName || 'Unknown';
+  // Remove characters that are illegal in file names
+  const safeSciName = scientificName.replace(/[\/\\:*?"<>|]/g, '_');
+  const safeTitle = (plantData.name || 'plant').replace(/[\/\\:*?"<>|]/g, '_');
+  
+  const fileName = `${safeTitle}_${Date.now()}.jpg`;
+  // DCIM/Hanamikke/<学名>/ or Pictures/Hanamikke/<学名>/
+  const folderName = `Hanamikke/${safeSciName}`;
 
-    const scientificName = plantData.scientificName || 'Unknown';
-    // Remove characters that are illegal in file names
-    const safeSciName = scientificName.replace(/[\/\\:*?"<>|]/g, '_');
-    const safeTitle = (plantData.name || 'plant').replace(/[\/\\:*?"<>|]/g, '_');
-    
-    const fileName = `${safeTitle}_${Date.now()}.jpg`;
-    // DCIM/Hanamikke/<学名>/ or Pictures/Hanamikke/<学名>/
-    const folderName = `Hanamikke/${safeSciName}`;
-
-    const result = await MediaSave.saveImageToGallery({
+  // Helper function to call the plugin
+  const doSave = async () => {
+    return await MediaSave.saveImageToGallery({
       base64Data: plantData.photo,
       folderName: folderName,
       fileName: fileName,
       relativeLocation: state.deviceStorageLocation || 'Pictures'
     });
-    
+  };
+
+  try {
+    // 1. Try saving directly first (this succeeds immediately on Android 10+ without asking permissions)
+    const result = await doSave();
     console.log('MediaSave: Photo saved successfully to device:', result.path);
     return result.path;
-  } catch (error) {
-    console.error('MediaSave: Failed to save photo to device:', error);
-    alert('端末への写真保存中にエラーが発生したニャ:\n' + error.message);
-    return null;
+  } catch (saveError) {
+    // 2. On failure, check if it was due to missing permissions (primarily Android 9 and below)
+    console.warn('MediaSave: Direct save failed, checking storage permissions...', saveError);
+    
+    try {
+      const permStatus = await MediaSave.checkPermissions();
+      if (permStatus.storage !== 'granted') {
+        const reqStatus = await MediaSave.requestPermissions();
+        if (reqStatus.storage !== 'granted') {
+          console.warn('MediaSave: Storage permission denied by user');
+          alert('写真の保存に必要なストレージアクセス権限が拒否されたため、端末への保存はスキップされたニャ。');
+          return null;
+        }
+        
+        // 3. Retry saving if permission was just granted
+        const retryResult = await doSave();
+        console.log('MediaSave: Photo saved successfully on retry:', retryResult.path);
+        return retryResult.path;
+      }
+      
+      // If permissions are already granted but save still failed, rethrow the original error
+      throw saveError;
+    } catch (permError) {
+      console.error('MediaSave: Failed during permission handling or retry:', permError);
+      alert('端末への写真保存中にエラーが発生したニャ:\n' + saveError.message);
+      return null;
+    }
   }
 }
 
