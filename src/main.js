@@ -20,15 +20,15 @@ let selectedBreedSlots = []; // 交配選択中スロットIDのリスト (最�
 // Global prevention of default context menu to avoid WebView freeze on long-press
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-});
+}, { capture: true });
 window.addEventListener('dragstart', (e) => {
   e.preventDefault();
-});
+}, { capture: true });
 window.addEventListener('selectstart', (e) => {
   if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
     e.preventDefault();
   }
-});
+}, { capture: true });
 
 // DOM Elements
 const el = {
