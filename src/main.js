@@ -21,6 +21,14 @@ let selectedBreedSlots = []; // 交配選択中スロットIDのリスト (最�
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
 });
+window.addEventListener('dragstart', (e) => {
+  e.preventDefault();
+});
+window.addEventListener('selectstart', (e) => {
+  if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+  }
+});
 
 // DOM Elements
 const el = {
