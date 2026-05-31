@@ -655,9 +655,10 @@ class AppState {
     this.ghRecords = {};
     this.ghActiveTheme = 'default';
     this.ghActivePot = 'default';
-    this.ghActiveBackplate = 'default';
     this.scanPhotoQuality = 'standard'; // 'standard' | 'max'
     this.adWatchCount = 0;
+    this.autoSaveToDevice = false;
+    this.deviceStorageLocation = 'Pictures'; // 'Pictures' | 'DCIM'
 
     this.loadState();
     this.loadPhotos();
@@ -724,9 +725,10 @@ class AppState {
         this.ghRecords = parsed.ghRecords || {};
         this.ghActiveTheme = parsed.ghActiveTheme || 'default';
         this.ghActivePot = parsed.ghActivePot || 'default';
-        this.ghActiveBackplate = parsed.ghActiveBackplate || 'default';
         this.scanPhotoQuality = parsed.scanPhotoQuality || 'standard';
         this.adWatchCount = parsed.adWatchCount || 0;
+        this.autoSaveToDevice = parsed.autoSaveToDevice !== undefined ? parsed.autoSaveToDevice : false;
+        this.deviceStorageLocation = parsed.deviceStorageLocation || 'Pictures';
 
         if (parsed.ghSlots) {
           this.ghSlots = parsed.ghSlots;
@@ -803,10 +805,11 @@ class AppState {
         ghSeeds: this.ghSeeds,
         ghRecords: this.ghRecords,
         ghActiveTheme: this.ghActiveTheme,
-        ghActivePot: this.ghActivePot,
         ghActiveBackplate: this.ghActiveBackplate,
         scanPhotoQuality: this.scanPhotoQuality,
-        adWatchCount: this.adWatchCount
+        adWatchCount: this.adWatchCount,
+        autoSaveToDevice: this.autoSaveToDevice,
+        deviceStorageLocation: this.deviceStorageLocation
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
@@ -1117,9 +1120,10 @@ class AppState {
     this.ghRecords = {};
     this.ghActiveTheme = 'default';
     this.ghActivePot = 'default';
-    this.ghActiveBackplate = 'default';
     this.scanPhotoQuality = 'standard';
     this.adWatchCount = 0;
+    this.autoSaveToDevice = false;
+    this.deviceStorageLocation = 'Pictures';
 
     // Clear photo database in IndexedDB
     PhotoDB.clear().catch(e => {

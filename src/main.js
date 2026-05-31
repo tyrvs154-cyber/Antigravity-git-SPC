@@ -8,11 +8,19 @@ import { camera } from './camera.js';
 import { AdMob, RewardAdPluginEvents } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import { registerPlugin } from '@capacitor/core';
+
+const MediaSave = registerPlugin('MediaSave');
 
 // Sound enabled global setting
 let soundEnabled = true;
 let greenhouseTimer = null;
 let selectedBreedSlots = []; // 交配選択中スロットIDのリスト (最大2)
+
+// Global prevention of default context menu to avoid WebView freeze on long-press
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+});
 
 // DOM Elements
 const el = {
@@ -134,6 +142,9 @@ const el = {
   apiModelSelect: document.getElementById('api-model-select'),
   soundToggle: document.getElementById('sound-toggle'),
   resetStateBtn: document.getElementById('reset-state-btn'),
+  deviceAutosaveToggle: document.getElementById('device-autosave-toggle'),
+  deviceSaveLocationRow: document.getElementById('device-save-location-row'),
+  deviceSaveLocationSelect: document.getElementById('device-save-location-select'),
 
   // Title Select Modal Elements
   titleSelectModalBackdrop: document.getElementById('title-select-modal-backdrop'),
@@ -433,6 +444,13 @@ function setupSettings() {
     if (el.apiModelSelect) {
       el.apiModelSelect.value = state.geminiModel || 'gemini-3.1-flash-lite';
     }
+    if (el.deviceAutosaveToggle) {
+      el.deviceAutosaveToggle.checked = state.autoSaveToDevice || false;
+      updateSaveLocationRowState(state.autoSaveToDevice);
+    }
+    if (el.deviceSaveLocationSelect) {
+      el.deviceSaveLocationSelect.value = state.deviceStorageLocation || 'Pictures';
+    }
     if (state.geminiKey) {
       el.apiKeyStatus.textContent = 'APIキーは登録済みであるニャ！😸';
       el.apiKeyStatus.className = 'api-status-msg registered';
@@ -522,9 +540,43 @@ function setupSettings() {
     });
   }
 
+  function updateSaveLocationRowState(enabled) {
+    if (el.deviceSaveLocationRow) {
+      if (enabled) {
+        el.deviceSaveLocationRow.style.opacity = '1';
+        el.deviceSaveLocationRow.style.pointerEvents = 'auto';
+      } else {
+        el.deviceSaveLocationRow.style.opacity = '0.5';
+        el.deviceSaveLocationRow.style.pointerEvents = 'none';
+      }
+    }
+  }
+
+  if (el.deviceAutosaveToggle) {
+    el.deviceAutosaveToggle.addEventListener('change', (e) => {
+      state.autoSaveToDevice = e.target.checked;
+      updateSaveLocationRowState(e.target.checked);
+      state.saveState();
+    });
+  }
+
+  if (el.deviceSaveLocationSelect) {
+    el.deviceSaveLocationSelect.addEventListener('change', (e) => {
+      state.deviceStorageLocation = e.target.value;
+      state.saveState();
+    });
+  }
+
   // Auto-initialize connection mode on launch
   if (el.apiModelSelect) {
     el.apiModelSelect.value = state.geminiModel || 'gemini-3.1-flash-lite';
+  }
+  if (el.deviceAutosaveToggle) {
+    el.deviceAutosaveToggle.checked = state.autoSaveToDevice || false;
+    updateSaveLocationRowState(state.autoSaveToDevice);
+  }
+  if (el.deviceSaveLocationSelect) {
+    el.deviceSaveLocationSelect.value = state.deviceStorageLocation || 'Pictures';
   }
   if (state.geminiKey) {
     el.modeGeminiBtn.classList.add('active');
@@ -978,8 +1030,50 @@ function animateTick(element, target, duration, suffix = '') {
   }, stepTime);
 }
 
+// Native media helper to write photos to DCIM or Pictures
+async function savePhotoToSharedStorage(plantData) {
+  if (!Capacitor.isNativePlatform()) return null;
+  if (!state.autoSaveToDevice) return null;
+
+  try {
+    // Check permission (for Android 9 and below)
+    const permStatus = await MediaSave.checkPermissions();
+    if (permStatus.storage !== 'granted') {
+      const reqStatus = await MediaSave.requestPermissions();
+      if (reqStatus.storage !== 'granted') {
+        console.warn('MediaSave: Permission denied by user');
+        alert('写真の保存に必要なストレージアクセス権限が拒否されたため、端末への保存はスキップされたニャ。');
+        return null;
+      }
+    }
+
+    const scientificName = plantData.scientificName || 'Unknown';
+    // Remove characters that are illegal in file names
+    const safeSciName = scientificName.replace(/[\/\\:*?"<>|]/g, '_');
+    const safeTitle = (plantData.name || 'plant').replace(/[\/\\:*?"<>|]/g, '_');
+    
+    const fileName = `${safeTitle}_${Date.now()}.jpg`;
+    // DCIM/Hanamikke/<学名>/ or Pictures/Hanamikke/<学名>/
+    const folderName = `Hanamikke/${safeSciName}`;
+
+    const result = await MediaSave.saveImageToGallery({
+      base64Data: plantData.photo,
+      folderName: folderName,
+      fileName: fileName,
+      relativeLocation: state.deviceStorageLocation || 'Pictures'
+    });
+    
+    console.log('MediaSave: Photo saved successfully to device:', result.path);
+    return result.path;
+  } catch (error) {
+    console.error('MediaSave: Failed to save photo to device:', error);
+    alert('端末への写真保存中にエラーが発生したニャ:\n' + error.message);
+    return null;
+  }
+}
+
 // Hook up Appraisal Result triggers
-el.registerPlantBtn.addEventListener('click', () => {
+el.registerPlantBtn.addEventListener('click', async () => {
   if (!activeScanResult) return;
   
   playClickSound();
@@ -989,6 +1083,21 @@ el.registerPlantBtn.addEventListener('click', () => {
     activeScanResult.memo = el.resultMemoInput.value.trim();
   } else {
     activeScanResult.memo = '';
+  }
+
+  // Save to physical storage if enabled and native platform
+  if (state.autoSaveToDevice && Capacitor.isNativePlatform()) {
+    el.registerPlantBtn.disabled = true;
+    const oldText = el.registerPlantBtn.textContent;
+    el.registerPlantBtn.textContent = '保存中ニャ...';
+    try {
+      await savePhotoToSharedStorage(activeScanResult);
+    } catch (e) {
+      console.error('Failed to save to shared storage:', e);
+    } finally {
+      el.registerPlantBtn.disabled = false;
+      el.registerPlantBtn.textContent = oldText;
+    }
   }
 
   // Update scan streak stats
@@ -1220,19 +1329,20 @@ function renderZukanGrid() {
     return;
   }
 
-  // 4. Group by name to file duplicates together
-  const nameMap = new Map();
+  // 4. Group by scientific name to file duplicates together
+  const scientificMap = new Map();
   plantsToRender.forEach(p => {
-    const name = p.userInstance.name;
-    if (!nameMap.has(name)) {
-      nameMap.set(name, []);
+    const sciName = p.userInstance.scientificName || 'Unknown';
+    if (!scientificMap.has(sciName)) {
+      scientificMap.set(sciName, []);
     }
-    nameMap.get(name).push(p.userInstance);
+    scientificMap.get(sciName).push(p.userInstance);
   });
 
   // Render grouped cards
-  nameMap.forEach((instances, name) => {
-    const representative = instances[0]; // Representative is the first sorted instance
+  scientificMap.forEach((instances, sciName) => {
+    const representative = instances[0]; // Representative is the first sorted instance (latest)
+    const displayName = representative.name; // Display interesting title on the card
     const card = document.createElement('div');
     card.className = 'zukan-card';
     
@@ -1249,14 +1359,14 @@ function renderZukanGrid() {
     
     card.innerHTML = `
       <div class="zc-img-holder" style="position: relative; overflow: hidden; border-radius: var(--border-radius-sm);">
-        <img src="${imageSrc}" alt="${name}" loading="lazy">
+        <img src="${imageSrc}" alt="${displayName}" loading="lazy">
         ${frameOverlayHtml}
         <span class="zc-badge ${displayRarity}">${displayRarity}</span>
         ${countBadgeHtml}
       </div>
       <div class="zc-info">
-        <div class="zc-name">${name}</div>
-        <div class="zc-scientific">${representative.scientificName}</div>
+        <div class="zc-name">${displayName}</div>
+        <div class="zc-scientific">${sciName}</div>
         <div class="zc-meta">
           <span>${formatDate(representative.date)}</span>
           <span class="zc-pts">${representative.totalScore} pts</span>

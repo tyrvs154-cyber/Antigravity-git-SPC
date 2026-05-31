@@ -593,6 +593,29 @@
           </div>
         </div>
 
+        <!-- Photo auto save settings -->
+        <div class="settings-section">
+          <h4>💾 写真の端末自動保存</h4>
+          <p class="api-help-text">
+            スキャンした写真を端末の共有フォルダに自動的に書き出し保存するニャ！<br>
+            ※ DCIM または Pictures の直下に <strong>Hanamikke/&lt;学名&gt;/</strong> フォルダが作成され、自動的に分類整理されます。
+          </p>
+          <div class="save-toggle-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <span>端末へ自動保存する:</span>
+            <label class="switch">
+              <input type="checkbox" id="device-autosave-toggle">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="device-save-location-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; opacity: 0.5; pointer-events: none; transition: opacity 0.2s;">
+            <span>保存先フォルダ:</span>
+            <select id="device-save-location-select" class="sort-select" style="width: 160px; height: 32px; padding: 0 5px; border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); font-family: inherit; font-size: 13px; color: var(--color-text-dark); background-color: var(--color-card-white);">
+              <option value="Pictures">Pictures (ピクチャ)</option>
+              <option value="DCIM">DCIM (カメラロール)</option>
+            </select>
+          </div>
+        </div>
+
         <!-- Debug Section -->
         <div class="settings-section" style="border-top: 1.5px dashed var(--color-border); padding-top: 15px;">
           <h4>🔧 デバッグ機能 (開発用)</h4>
