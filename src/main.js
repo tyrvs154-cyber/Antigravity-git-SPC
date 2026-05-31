@@ -867,15 +867,15 @@ async function processSnapshot() {
       try {
         const aiResult = await analyzePlantImage(lowRes, state.geminiKey, state.geminiModel);
         showScannerLoading(false);
-        presentAppraisalResult(aiResult, highRes);
+        presentAppraisalResult(aiResult, highRes, lowRes);
       } catch (aiErr) {
         console.warn('AI analysis failed, falling back to local simulation:', aiErr);
         alert(`AI鑑定エラーが発生したため、ニャルド博士の記憶バンクで鑑定しますニャ！\n(${aiErr.message})`);
-        runLocalAppraisal(highRes);
+        runLocalAppraisal(highRes, lowRes);
       }
     } else {
-      // Local Mock Appraisal using highRes
-      runLocalAppraisal(highRes);
+      // Local Mock Appraisal using highRes & lowRes
+      runLocalAppraisal(highRes, lowRes);
     }
 
   } catch (error) {
@@ -884,7 +884,7 @@ async function processSnapshot() {
   }
 }
 
-function runLocalAppraisal(dataUrl) {
+function runLocalAppraisal(dataUrl, lowResUrl = null) {
   setTimeout(() => {
     showScannerLoading(false);
     
@@ -908,7 +908,7 @@ function runLocalAppraisal(dataUrl) {
     
     if (!matchedPlant) matchedPlant = getRandomFallback();
 
-    presentAppraisalResult(matchedPlant, dataUrl);
+    presentAppraisalResult(matchedPlant, dataUrl, lowResUrl);
   }, 2500);
 }
 
@@ -943,7 +943,7 @@ function getPlantCategory(name) {
 // --------------------------------------------------------------------------
 // Appraisal Result Display
 // --------------------------------------------------------------------------
-function presentAppraisalResult(plantResult, dataUrl) {
+function presentAppraisalResult(plantResult, dataUrl, lowResUrl = null) {
   activeScanResult = {
     name: plantResult.name,
     scientificName: plantResult.scientificName || 'Unknown',
@@ -954,6 +954,7 @@ function presentAppraisalResult(plantResult, dataUrl) {
     description: plantResult.description || '特徴情報はありません。',
     catDoctorComment: plantResult.catDoctorComment || '元気に育っているニャ！',
     photo: dataUrl,
+    photoLowRes: lowResUrl || dataUrl,
     category: getPlantCategory(plantResult.name),
     isNonPlant: !!plantResult.isNonPlant
   };
@@ -1048,9 +1049,9 @@ async function savePhotoToSharedStorage(plantData) {
   const safeSciName = scientificName.replace(/[\/\\:*?"<>|]/g, '_');
   const safeTitle = (plantData.name || 'plant').replace(/[\/\\:*?"<>|]/g, '_');
   
-  const fileName = `${safeTitle}_${Date.now()}.jpg`;
-  // DCIM/Hanamikke/<学名>/ or Pictures/Hanamikke/<学名>/
-  const folderName = `Hanamikke/${safeSciName}`;
+  // フラット保存のため、ファイル名に学名を含め、フォルダ名は Hanamikke に固定する
+  const fileName = `${safeSciName}_${safeTitle}_${Date.now()}.jpg`;
+  const folderName = `Hanamikke`;
 
   // Helper function to call the plugin
   const doSave = async () => {
@@ -1116,7 +1117,13 @@ el.registerPlantBtn.addEventListener('click', async () => {
     const oldText = el.registerPlantBtn.textContent;
     el.registerPlantBtn.textContent = '保存中ニャ...';
     try {
-      await savePhotoToSharedStorage(activeScanResult);
+      const savedPath = await savePhotoToSharedStorage(activeScanResult);
+      if (savedPath) {
+        activeScanResult.devicePath = savedPath;
+        if (activeScanResult.photoLowRes) {
+          activeScanResult.photo = activeScanResult.photoLowRes;
+        }
+      }
     } catch (e) {
       console.error('Failed to save to shared storage:', e);
     } finally {
@@ -1437,7 +1444,13 @@ function showZukanDetail(instances) {
     activeIndex = idx;
     const userInstance = instances[activeIndex];
 
-    el.detailPlantImg.src = userInstance.photo;
+    if (userInstance.devicePath && Capacitor.isNativePlatform()) {
+      el.detailPlantImg.src = Capacitor.convertFileSrc(userInstance.devicePath);
+      el.detailPlantImg.setAttribute('data-device-path', userInstance.devicePath);
+    } else {
+      el.detailPlantImg.src = userInstance.photo;
+      el.detailPlantImg.removeAttribute('data-device-path');
+    }
     el.detailRarityBadge.textContent = userInstance.rarity;
     el.detailRarityBadge.className = `detail-rarity-badge ${userInstance.rarity}`;
     
@@ -2180,13 +2193,150 @@ function createSingleLeaf(container, emojis) {
 
 // Setup Lightbox Zoom Modal
 function setupLightbox() {
-  if (!el.detailPlantImg || !el.lightboxModalBackdrop) return;
+  if (!el.detailPlantImg || !el.lightboxModalBackdrop || !el.lightboxImg) return;
 
-  // Click detail image to open lightbox
+  let zoomScale = 1;
+  let startScale = 1;
+  let startDistance = 0;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let translateX = 0;
+  let translateY = 0;
+  let startTranslateX = 0;
+  let startTranslateY = 0;
+
+  // Active pointers cache for multi-touch tracking
+  const activePointers = {};
+
+  const updateTransform = () => {
+    // Limit scale bounds
+    zoomScale = Math.max(1, Math.min(zoomScale, 5));
+    // When scale is 1, clamp translate back to center
+    if (zoomScale === 1) {
+      translateX = 0;
+      translateY = 0;
+    }
+    el.lightboxImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+  };
+
+  const getDistance = (p1, p2) => {
+    const dx = p1.clientX - p2.clientX;
+    const dy = p1.clientY - p2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const resetZoom = () => {
+    zoomScale = 1;
+    translateX = 0;
+    translateY = 0;
+    updateTransform();
+  };
+
+  // Open Lightbox
   el.detailPlantImg.addEventListener('click', () => {
     playClickSound();
-    el.lightboxImg.src = el.detailPlantImg.src;
+    resetZoom();
+
+    // Use devicePath original file if available in the selected instance
+    const devicePath = el.detailPlantImg.getAttribute('data-device-path');
+    if (devicePath && Capacitor.isNativePlatform()) {
+      el.lightboxImg.src = Capacitor.convertFileSrc(devicePath);
+    } else {
+      el.lightboxImg.src = el.detailPlantImg.src;
+    }
+
     el.lightboxModalBackdrop.style.display = 'flex';
+  });
+
+  // Pointer Events handling on lightbox image
+  const img = el.lightboxImg;
+  
+  img.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    activePointers[e.pointerId] = e;
+    const pointerList = Object.values(activePointers);
+
+    if (pointerList.length === 1) {
+      // Start drag pan
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startTranslateX = translateX;
+      startTranslateY = translateY;
+      img.setPointerCapture(e.pointerId);
+    } else if (pointerList.length === 2) {
+      // Start pinch zoom
+      isDragging = false;
+      startDistance = getDistance(pointerList[0], pointerList[1]);
+      startScale = zoomScale;
+    }
+  });
+
+  img.addEventListener('pointermove', (e) => {
+    e.stopPropagation();
+    if (!activePointers[e.pointerId]) return;
+    activePointers[e.pointerId] = e;
+
+    const pointerList = Object.values(activePointers);
+
+    if (pointerList.length === 1 && isDragging && zoomScale > 1) {
+      // Drag panning (only allowed when zoomed in)
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      translateX = startTranslateX + dx;
+      translateY = startTranslateY + dy;
+      updateTransform();
+    } else if (pointerList.length === 2) {
+      // Pinch Zooming
+      const distance = getDistance(pointerList[0], pointerList[1]);
+      if (startDistance > 0) {
+        const ratio = distance / startDistance;
+        zoomScale = startScale * ratio;
+        updateTransform();
+      }
+    }
+  });
+
+  const handlePointerUp = (e) => {
+    e.stopPropagation();
+    if (activePointers[e.pointerId]) {
+      img.releasePointerCapture(e.pointerId);
+      delete activePointers[e.pointerId];
+    }
+
+    const pointerList = Object.values(activePointers);
+    if (pointerList.length < 2) {
+      startDistance = 0;
+    }
+    if (pointerList.length === 0) {
+      isDragging = false;
+    }
+  };
+
+  img.addEventListener('pointerup', handlePointerUp);
+  img.addEventListener('pointercancel', handlePointerUp);
+
+  // Prevent parent modal click closure when clicking/touching the image itself
+  img.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  // Double tap to quick reset or zoom
+  let lastTap = 0;
+  img.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      // Double tap detected
+      if (zoomScale > 1) {
+        resetZoom();
+      } else {
+        zoomScale = 2.5;
+        updateTransform();
+      }
+    }
+    lastTap = now;
   });
 
   // Click close button to close
