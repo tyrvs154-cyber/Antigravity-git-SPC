@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OpenCV Android SDK
+android/opencv
+
+# Local debug output directory
+debug

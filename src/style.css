@@ -149,6 +149,7 @@ body {
   font-weight: 900;
   color: var(--color-primary-dark);
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .header-right {
@@ -4137,6 +4138,7 @@ body {
 .logo-title {
   font-size: calc(18px * var(--font-scale)) !important; /* 18px -> 36px */
   font-weight: 900 !important;
+  white-space: nowrap !important;
 }
 
 .logo-icon {
@@ -4887,6 +4889,69 @@ input[type="text"], input[type="password"], select, textarea {
 }
 .gh-apply-opt-btn:active {
   transform: scale(0.95);
+}
+
+/* Version Badge next to Logo Title */
+.app-version {
+  font-family: var(--font-numbers);
+  font-size: 0.65em; /* Scales dynamically with the title font scale */
+  font-weight: 700;
+  color: inherit; /* Inherits the exact text color of .logo-title for contrast */
+  opacity: 0.75;
+  margin-left: 6px;
+  vertical-align: middle;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Custom styles for beauty panel range inputs and presets */
+.beauty-panel input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  background: var(--color-border);
+  border-radius: 3px;
+  outline: none;
+  margin: 0;
+  transition: background 0.2s;
+}
+
+.beauty-panel input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-card-white);
+  box-shadow: 0 2px 4px rgba(61, 90, 78, 0.2);
+  transition: transform 0.1s ease;
+}
+
+.beauty-panel input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.beauty-panel input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.9);
+}
+
+.beauty-panel input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-card-white);
+  box-shadow: 0 2px 4px rgba(61, 90, 78, 0.2);
+  transition: transform 0.1s ease;
+}
+
+/* Scrollbar hiding for presets row */
+.presets-row::-webkit-scrollbar {
+  display: none;
 }
 
 

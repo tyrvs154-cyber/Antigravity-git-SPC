@@ -2,6 +2,9 @@
 
 import { FALLBACK_PLANTS } from './plantsData.js';
 import { state } from './state.js';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+const HanamikkeCamera = registerPlugin('HanamikkeCamera');
 
 class CameraHandler {
   constructor() {
@@ -10,6 +13,8 @@ class CameraHandler {
     this.canvasElement = null;
     this.selectedSampleImage = null; // Store dataUrl if user chooses a sample
     this.aspectRatio = '1:1'; // Default aspect ratio ('1:1', '3:4', '9:16')
+    this.nativeCaptureResult = null; // Stored result from native plugin
+    this.beautyParams = { brightness: 0, contrast: 0, saturation: 0, warmth: 0, vignette: 0 };
   }
 
   init(videoEl, canvasEl) {
@@ -20,6 +25,25 @@ class CameraHandler {
   async startCamera() {
     this.stopCamera();
     this.selectedSampleImage = null;
+    this.nativeCaptureResult = null;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const result = await HanamikkeCamera.startCamera({ aiResolution: state.aiResolution });
+        if (result && result.beautifiedImagePath) {
+          // Convert the content URI to a web-viewable URL
+          result.beautifiedWebPath = Capacitor.convertFileSrc(result.beautifiedImagePath);
+          result.rawWebPath = Capacitor.convertFileSrc(result.rawImagePath);
+          this.nativeCaptureResult = result;
+          return true;
+        }
+        throw new Error('カメラ撮影の結果が取得できませんでしたニャ。');
+      } catch (error) {
+        this.nativeCaptureResult = null;
+        console.error('Native camera error:', error);
+        throw new Error('カメラ撮影がキャンセルされましたニャ。');
+      }
+    }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('お使いのブラウザや環境ではカメラへのアクセスがサポートされていません。画像アップロードかサンプル植物を使ってスキャンしてくださいニャ。');
@@ -39,6 +63,8 @@ class CameraHandler {
       if (this.videoElement) {
         this.videoElement.srcObject = this.stream;
         this.videoElement.style.display = 'block';
+        // Apply current beauty filter
+        this.setBeautyParams(this.beautyParams);
       }
       return true;
     } catch (error) {
@@ -55,6 +81,7 @@ class CameraHandler {
         if (this.videoElement) {
           this.videoElement.srcObject = this.stream;
           this.videoElement.style.display = 'block';
+          this.setBeautyParams(this.beautyParams);
         }
         return true;
       } catch (err2) {
@@ -68,6 +95,7 @@ class CameraHandler {
           if (this.videoElement) {
             this.videoElement.srcObject = this.stream;
             this.videoElement.style.display = 'block';
+            this.setBeautyParams(this.beautyParams);
           }
           return true;
         } catch (err3) {
@@ -119,10 +147,10 @@ class CameraHandler {
     const highResDimension = isMax ? Infinity : 1080;
     const highResQuality = isMax ? 0.95 : 0.80;
 
-    // Generate high resolution image for Zukan display
-    const highRes = this.resizeAndCompress(video, highResDimension, highResQuality);
-    // Generate low resolution image (max 480px) for AI upload
-    const lowRes = this.resizeAndCompress(video, 480, 0.60);
+    // Generate high resolution image for Zukan display (apply beauty filter)
+    const highRes = this.resizeAndCompress(video, highResDimension, highResQuality, true);
+    // Generate low resolution image (max 480px) for AI upload (no filter)
+    const lowRes = this.resizeAndCompress(video, 480, 0.60, false);
 
     return { highRes, lowRes };
   }
@@ -130,7 +158,7 @@ class CameraHandler {
   /**
    * Scales, crops, and compresses a video or image source on an offscreen canvas.
    */
-  resizeAndCompress(source, maxDimension, quality) {
+  resizeAndCompress(source, maxDimension, quality, applyFilter = false) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
@@ -195,8 +223,39 @@ class CameraHandler {
     canvas.width = newWidth;
     canvas.height = newHeight;
 
+    // Apply beauty filter to context before drawing if requested
+    if (applyFilter) {
+      const bp = this.beautyParams;
+      const brightnessFactor = Math.max(0.0, 1.0 + (bp.brightness / 100.0) * 1.0);
+      const contrastFactor = Math.max(0.0, 1.0 + (bp.contrast / 100.0) * 1.5);
+      const saturationFactor = Math.max(0.0, 1.0 + (bp.saturation / 100.0) * 4.0);
+      
+      let filterStr = `saturate(${saturationFactor}) contrast(${contrastFactor}) brightness(${brightnessFactor})`;
+      if (bp.warmth >= 0) {
+        filterStr += ` sepia(${bp.warmth / 100 * 0.8}) hue-rotate(${-bp.warmth / 100 * 20}deg) saturate(${1 + bp.warmth / 100 * 0.5})`;
+      } else {
+        filterStr += ` hue-rotate(${bp.warmth / 100 * 20}deg) saturate(${1 - bp.warmth / 100 * 0.4})`;
+      }
+      ctx.filter = filterStr;
+    }
+
     // Draw the cropped region from source to destination canvas
     ctx.drawImage(source, sx, sy, cropWidth, cropHeight, 0, 0, newWidth, newHeight);
+
+    // Apply Vignette on canvas if requested
+    if (applyFilter && this.beautyParams.vignette > 0) {
+      ctx.save();
+      ctx.filter = 'none'; // reset filter so it doesn't affect gradient
+      const cx = newWidth / 2;
+      const cy = newHeight / 2;
+      const outerRadius = Math.sqrt(cx * cx + cy * cy);
+      const grad = ctx.createRadialGradient(cx, cy, outerRadius * 0.4, cx, cy, outerRadius);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, `rgba(0,0,0,${this.beautyParams.vignette / 100 * 0.8})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, newWidth, newHeight);
+      ctx.restore();
+    }
 
     return canvas.toDataURL('image/jpeg', quality);
   }
@@ -214,8 +273,9 @@ class CameraHandler {
         const highResDimension = isMax ? Infinity : 1080;
         const highResQuality = isMax ? 0.95 : 0.80;
 
-        const highRes = this.resizeAndCompress(img, highResDimension, highResQuality);
-        const lowRes = this.resizeAndCompress(img, 480, 0.60);
+        // Apply filter to highRes, but not to lowRes
+        const highRes = this.resizeAndCompress(img, highResDimension, highResQuality, true);
+        const lowRes = this.resizeAndCompress(img, 480, 0.60, false);
         resolve({ highRes, lowRes });
       };
       img.onerror = () => {
@@ -250,6 +310,44 @@ class CameraHandler {
   setSampleImage(base64Data) {
     this.selectedSampleImage = base64Data;
     this.stopCamera();
+  }
+
+  setBeautyParams(params) {
+    this.beautyParams = { ...params };
+    
+    const bp = this.beautyParams;
+    const brightnessFactor = Math.max(0.0, 1.0 + (bp.brightness / 100.0) * 1.0);
+    const contrastFactor = Math.max(0.0, 1.0 + (bp.contrast / 100.0) * 1.5);
+    const saturationFactor = Math.max(0.0, 1.0 + (bp.saturation / 100.0) * 4.0);
+    
+    let filterString = `saturate(${saturationFactor}) contrast(${contrastFactor}) brightness(${brightnessFactor})`;
+    if (bp.warmth >= 0) {
+      filterString += ` sepia(${bp.warmth / 100 * 0.8}) hue-rotate(${-bp.warmth / 100 * 20}deg) saturate(${1 + bp.warmth / 100 * 0.5})`;
+    } else {
+      filterString += ` hue-rotate(${bp.warmth / 100 * 20}deg) saturate(${1 - bp.warmth / 100 * 0.4})`;
+    }
+    
+    if (this.videoElement) {
+      this.videoElement.style.filter = filterString;
+    }
+    const previewImg = document.getElementById('scanner-preview-img');
+    if (previewImg) {
+      previewImg.style.filter = filterString;
+    }
+
+    // Update Vignette Overlay
+    const vignetteOverlay = document.getElementById('vignette-overlay');
+    if (vignetteOverlay) {
+      vignetteOverlay.style.background = `radial-gradient(circle, transparent 50%, rgba(0,0,0,${bp.vignette / 100 * 0.8}) 100%)`;
+    }
+  }
+
+  getNativeCapture() {
+    return this.nativeCaptureResult;
+  }
+
+  clearNativeCapture() {
+    this.nativeCaptureResult = null;
   }
 }
 

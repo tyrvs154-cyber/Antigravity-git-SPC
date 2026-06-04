@@ -641,6 +641,39 @@ function updateQualityToggleUI() {
 }
 
 function setupCamera() {
+  // AI Resolution Toggle
+  const aiResBtns = document.querySelectorAll('.ai-res-btn');
+  if (aiResBtns.length > 0) {
+    // 初期状態の反映
+    aiResBtns.forEach(btn => {
+      if (parseInt(btn.getAttribute('data-res'), 10) === state.aiResolution) {
+        btn.classList.add('active');
+        btn.style.background = 'var(--color-primary-light)';
+        btn.style.color = 'var(--color-primary-dark)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--color-text-muted)';
+      }
+    });
+
+    aiResBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        playClickSound();
+        aiResBtns.forEach(b => {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.color = 'var(--color-text-muted)';
+        });
+        e.target.classList.add('active');
+        e.target.style.background = 'var(--color-primary-light)';
+        e.target.style.color = 'var(--color-primary-dark)';
+        state.aiResolution = parseInt(e.target.getAttribute('data-res'), 10);
+        state.saveState();
+      });
+    });
+  }
+
   // Capture photo snapshot
   el.takeSnapshotBtn.addEventListener('click', () => {
     processSnapshot();
@@ -732,6 +765,179 @@ function setupCamera() {
     startScanner();
   });
 
+  // Web Beauty Control Panel (Presets & Detailed Sliders)
+  const WEATHER_PRESETS = {
+    'sunny': { brightness: 0, contrast: 0, saturation: 0, warmth: 0, vignette: 0, greenSat: 0, flowerSat: 0, skyBlue: 0, clarity: 0, shadow: 0, softFocus: 0 },
+    'light-cloudy': { brightness: 5, contrast: 10, saturation: 5, warmth: 5, vignette: 0, greenSat: 5, flowerSat: 5, skyBlue: 20, clarity: 5, shadow: 10, softFocus: 0 },
+    'cloudy': { brightness: 15, contrast: 15, saturation: 10, warmth: 10, vignette: 5, greenSat: 10, flowerSat: 10, skyBlue: 10, clarity: 10, shadow: 25, softFocus: 0 },
+    'rainy': { brightness: 0, contrast: -5, saturation: -10, warmth: -20, vignette: 30, greenSat: 20, flowerSat: 10, skyBlue: -10, clarity: 15, shadow: 15, softFocus: 40 }
+  };
+
+  const STYLE_PRESETS = {
+    'natural': { brightness: 0, contrast: 0, saturation: 0, warmth: 0, vignette: 0, greenSat: 0, flowerSat: 0, skyBlue: 0, clarity: 0, shadow: 0, softFocus: 0 },
+    'vivid': { brightness: 5, contrast: 20, saturation: 30, warmth: -5, vignette: 10, greenSat: 10, flowerSat: 20, skyBlue: 10, clarity: 10, shadow: 0, softFocus: 0 },
+    'flower': { brightness: 10, contrast: 10, saturation: 20, warmth: 5, vignette: 15, greenSat: -5, flowerSat: 50, skyBlue: 0, clarity: 15, shadow: 10, softFocus: 0 },
+    'forest': { brightness: -5, contrast: 25, saturation: 15, warmth: -10, vignette: 25, greenSat: 40, flowerSat: 0, skyBlue: 0, clarity: 30, shadow: 20, softFocus: 0 },
+    'warm': { brightness: 10, contrast: 10, saturation: 15, warmth: 35, vignette: 15, greenSat: 5, flowerSat: 10, skyBlue: 0, clarity: 5, shadow: 5, softFocus: 5 },
+    'cinema': { brightness: -10, contrast: 30, saturation: -10, warmth: 15, vignette: 50, greenSat: -10, flowerSat: -10, skyBlue: -10, clarity: 20, shadow: 10, softFocus: 10 }
+  };
+
+  let currentWeather = 'sunny';
+  let currentStyle = 'natural';
+
+  let beautyParams = { brightness: 0, contrast: 0, saturation: 0, warmth: 0, vignette: 0, greenSat: 0, flowerSat: 0, skyBlue: 0, clarity: 0, shadow: 0, softFocus: 0 };
+
+  const sliders = {
+    brightness: document.getElementById('slider-brightness'),
+    contrast: document.getElementById('slider-contrast'),
+    saturation: document.getElementById('slider-saturation'),
+    warmth: document.getElementById('slider-warmth'),
+    vignette: document.getElementById('slider-vignette'),
+    greenSat: document.getElementById('slider-green-sat'),
+    flowerSat: document.getElementById('slider-flower-sat'),
+    skyBlue: document.getElementById('slider-sky-blue'),
+    clarity: document.getElementById('slider-clarity'),
+    shadow: document.getElementById('slider-shadow'),
+    softFocus: document.getElementById('slider-soft-focus')
+  };
+
+  const valTexts = {
+    brightness: document.getElementById('val-brightness'),
+    contrast: document.getElementById('val-contrast'),
+    saturation: document.getElementById('val-saturation'),
+    warmth: document.getElementById('val-warmth'),
+    vignette: document.getElementById('val-vignette'),
+    greenSat: document.getElementById('val-green-sat'),
+    flowerSat: document.getElementById('val-flower-sat'),
+    skyBlue: document.getElementById('val-sky-blue'),
+    clarity: document.getElementById('val-clarity'),
+    shadow: document.getElementById('val-shadow'),
+    softFocus: document.getElementById('val-soft-focus')
+  };
+
+  const weatherBtns = document.querySelectorAll('.weather-btn');
+  const presetBtns = document.querySelectorAll('.preset-btn'); // Style buttons
+  const toggleDetailsBtn = document.getElementById('toggle-details-btn');
+  const detailsSlidersContainer = document.getElementById('details-sliders-container');
+  const toggleDetailsArrow = document.getElementById('toggle-details-arrow');
+
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  function updateSlidersUI() {
+    Object.keys(sliders).forEach(key => {
+      const slider = sliders[key];
+      const txt = valTexts[key];
+      if (slider) {
+        slider.value = beautyParams[key];
+      }
+      if (txt) {
+        txt.textContent = `${beautyParams[key] > 0 ? '+' : ''}${beautyParams[key]}%`;
+      }
+    });
+    camera.setBeautyParams(beautyParams);
+  }
+
+  function applyCombinedPreset() {
+    if (currentStyle === 'custom') return; // Do not override if custom
+
+    const w = WEATHER_PRESETS[currentWeather] || WEATHER_PRESETS['sunny'];
+    const s = STYLE_PRESETS[currentStyle] || STYLE_PRESETS['natural'];
+
+    Object.keys(beautyParams).forEach(key => {
+      let min = (key === 'vignette' || key === 'clarity' || key === 'softFocus') ? 0 : -100;
+      let max = 100;
+      beautyParams[key] = clamp(w[key] + s[key], min, max);
+    });
+
+    updateSlidersUI();
+  }
+
+  function updateActiveButtons() {
+    weatherBtns.forEach(btn => {
+      if (btn.getAttribute('data-weather') === currentWeather) {
+        btn.classList.add('active');
+        btn.style.borderColor = 'var(--color-primary)';
+        btn.style.backgroundColor = 'var(--color-primary-light)';
+        btn.style.color = 'var(--color-primary-dark)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.borderColor = 'var(--color-border)';
+        btn.style.backgroundColor = 'var(--color-bg-light)';
+        btn.style.color = 'var(--color-text-dark)';
+      }
+    });
+
+    presetBtns.forEach(btn => {
+      if (btn.getAttribute('data-preset') === currentStyle) {
+        btn.classList.add('active');
+        btn.style.borderColor = 'var(--color-primary)';
+        btn.style.backgroundColor = 'var(--color-primary-light)';
+        btn.style.color = 'var(--color-primary-dark)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.borderColor = 'var(--color-border)';
+        btn.style.backgroundColor = 'var(--color-bg-light)';
+        btn.style.color = 'var(--color-text-dark)';
+      }
+    });
+  }
+
+  weatherBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      playClickSound();
+      currentWeather = btn.getAttribute('data-weather');
+      updateActiveButtons();
+      applyCombinedPreset();
+    });
+  });
+
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      playClickSound();
+      currentStyle = btn.getAttribute('data-preset');
+      updateActiveButtons();
+      if (currentStyle !== 'custom') {
+        applyCombinedPreset();
+      }
+    });
+  });
+
+  Object.keys(sliders).forEach(key => {
+    const slider = sliders[key];
+    if (slider) {
+      slider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        beautyParams[key] = val;
+        if (valTexts[key]) {
+          valTexts[key].textContent = `${val > 0 ? '+' : ''}${val}%`;
+        }
+        currentStyle = 'custom';
+        updateActiveButtons();
+        camera.setBeautyParams(beautyParams);
+      });
+    }
+  });
+
+  if (toggleDetailsBtn && detailsSlidersContainer) {
+    toggleDetailsBtn.addEventListener('click', () => {
+      playClickSound();
+      const isHidden = detailsSlidersContainer.style.display === 'none';
+      if (isHidden) {
+        detailsSlidersContainer.style.display = 'flex';
+        if (toggleDetailsArrow) toggleDetailsArrow.textContent = '▲';
+      } else {
+        detailsSlidersContainer.style.display = 'none';
+        if (toggleDetailsArrow) toggleDetailsArrow.textContent = '▼';
+      }
+    });
+  }
+
+  // Initialize with Sunny + Natural preset
+  updateActiveButtons();
+  applyCombinedPreset();
+
   // Initialize quality toggle UI from state
   updateQualityToggleUI();
 
@@ -781,8 +987,13 @@ function startScanner() {
   el.scannerLaser.classList.remove('scanning');
 
   camera.startCamera().then(() => {
-    el.scannerPlaceholder.style.display = 'none';
-    el.scannerLaser.classList.add('scanning');
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform() && camera.getNativeCapture()) {
+      el.scannerPlaceholder.style.display = 'none';
+      processSnapshot();
+    } else {
+      el.scannerPlaceholder.style.display = 'none';
+      el.scannerLaser.classList.add('scanning');
+    }
   }).catch(err => {
     el.scannerPlaceholder.style.display = 'flex';
     el.scannerPlaceholder.querySelector('p').textContent = err.message;
@@ -852,7 +1063,19 @@ function analyzeCanvasColor(canvas) {
 // Processes taking photo and calling AI or Mock
 async function processSnapshot() {
   try {
-    const { highRes, lowRes } = camera.capturePhoto();
+    let highRes, lowRes;
+    const isNative = typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
+    const nativeResult = isNative ? camera.getNativeCapture() : null;
+
+    if (nativeResult) {
+      highRes = nativeResult.beautifiedWebPath;
+      lowRes = nativeResult.rawBase64;
+    } else {
+      const captured = camera.capturePhoto();
+      highRes = captured.highRes;
+      lowRes = captured.lowRes;
+    }
+
     showPreview(highRes);
     
     // Toggle animations
@@ -867,15 +1090,16 @@ async function processSnapshot() {
       try {
         const aiResult = await analyzePlantImage(lowRes, state.geminiKey, state.geminiModel);
         showScannerLoading(false);
-        presentAppraisalResult(aiResult, highRes, lowRes);
+        presentAppraisalResult(aiResult, highRes, lowRes, nativeResult);
+        camera.clearNativeCapture();
       } catch (aiErr) {
         console.warn('AI analysis failed, falling back to local simulation:', aiErr);
         alert(`AI鑑定エラーが発生したため、ニャルド博士の記憶バンクで鑑定しますニャ！\n(${aiErr.message})`);
-        runLocalAppraisal(highRes, lowRes);
+        runLocalAppraisal(highRes, lowRes, nativeResult);
       }
     } else {
       // Local Mock Appraisal using highRes & lowRes
-      runLocalAppraisal(highRes, lowRes);
+      runLocalAppraisal(highRes, lowRes, nativeResult);
     }
 
   } catch (error) {
@@ -884,12 +1108,19 @@ async function processSnapshot() {
   }
 }
 
-function runLocalAppraisal(dataUrl, lowResUrl = null) {
+function runLocalAppraisal(dataUrl, lowResUrl = null, nativePaths = null) {
   setTimeout(() => {
     showScannerLoading(false);
     
     // Analyze canvas color
-    const color = analyzeCanvasColor(el.hiddenCanvas);
+    let color = 'green';
+    if (typeof Capacitor === 'undefined' || !Capacitor.isNativePlatform()) {
+      color = analyzeCanvasColor(el.hiddenCanvas);
+    } else {
+      const colors = ['green', 'yellow', 'pink'];
+      color = colors[Math.floor(Math.random() * colors.length)];
+    }
+
     let matchedPlant = null;
     
     // Simple plant match heuristics based on color
@@ -908,7 +1139,8 @@ function runLocalAppraisal(dataUrl, lowResUrl = null) {
     
     if (!matchedPlant) matchedPlant = getRandomFallback();
 
-    presentAppraisalResult(matchedPlant, dataUrl, lowResUrl);
+    presentAppraisalResult(matchedPlant, dataUrl, lowResUrl, nativePaths);
+    camera.clearNativeCapture();
   }, 2500);
 }
 
@@ -943,7 +1175,7 @@ function getPlantCategory(name) {
 // --------------------------------------------------------------------------
 // Appraisal Result Display
 // --------------------------------------------------------------------------
-function presentAppraisalResult(plantResult, dataUrl, lowResUrl = null) {
+function presentAppraisalResult(plantResult, dataUrl, lowResUrl = null, nativePaths = null) {
   activeScanResult = {
     name: plantResult.name,
     scientificName: plantResult.scientificName || 'Unknown',
@@ -955,6 +1187,8 @@ function presentAppraisalResult(plantResult, dataUrl, lowResUrl = null) {
     catDoctorComment: plantResult.catDoctorComment || '元気に育っているニャ！',
     photo: dataUrl,
     photoLowRes: lowResUrl || dataUrl,
+    devicePath: nativePaths ? nativePaths.beautifiedImagePath : null,
+    rawDevicePath: nativePaths ? nativePaths.rawImagePath : null,
     category: getPlantCategory(plantResult.name),
     isNonPlant: !!plantResult.isNonPlant
   };
@@ -1113,22 +1347,29 @@ el.registerPlantBtn.addEventListener('click', async () => {
 
   // Save to physical storage if enabled and native platform
   if (state.autoSaveToDevice && Capacitor.isNativePlatform()) {
-    el.registerPlantBtn.disabled = true;
-    const oldText = el.registerPlantBtn.textContent;
-    el.registerPlantBtn.textContent = '保存中ニャ...';
-    try {
-      const savedPath = await savePhotoToSharedStorage(activeScanResult);
-      if (savedPath) {
-        activeScanResult.devicePath = savedPath;
-        if (activeScanResult.photoLowRes) {
-          activeScanResult.photo = activeScanResult.photoLowRes;
-        }
+    if (activeScanResult.devicePath) {
+      console.log('Image already saved by native camera to:', activeScanResult.devicePath);
+      if (activeScanResult.photoLowRes) {
+        activeScanResult.photo = activeScanResult.photoLowRes;
       }
-    } catch (e) {
-      console.error('Failed to save to shared storage:', e);
-    } finally {
-      el.registerPlantBtn.disabled = false;
-      el.registerPlantBtn.textContent = oldText;
+    } else {
+      el.registerPlantBtn.disabled = true;
+      const oldText = el.registerPlantBtn.textContent;
+      el.registerPlantBtn.textContent = '保存中ニャ...';
+      try {
+        const savedPath = await savePhotoToSharedStorage(activeScanResult);
+        if (savedPath) {
+          activeScanResult.devicePath = savedPath;
+          if (activeScanResult.photoLowRes) {
+            activeScanResult.photo = activeScanResult.photoLowRes;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to save to shared storage:', e);
+      } finally {
+        el.registerPlantBtn.disabled = false;
+        el.registerPlantBtn.textContent = oldText;
+      }
     }
   }
 

@@ -659,6 +659,7 @@ class AppState {
     this.adWatchCount = 0;
     this.autoSaveToDevice = false;
     this.deviceStorageLocation = 'Pictures'; // 'Pictures' | 'DCIM'
+    this.aiResolution = 768; // Default to High Precision
 
     this.loadState();
     this.loadPhotos();
@@ -729,6 +730,7 @@ class AppState {
         this.adWatchCount = parsed.adWatchCount || 0;
         this.autoSaveToDevice = parsed.autoSaveToDevice !== undefined ? parsed.autoSaveToDevice : false;
         this.deviceStorageLocation = parsed.deviceStorageLocation || 'Pictures';
+        this.aiResolution = parsed.aiResolution || 768;
 
         if (parsed.ghSlots) {
           this.ghSlots = parsed.ghSlots;

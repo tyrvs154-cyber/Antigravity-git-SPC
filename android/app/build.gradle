@@ -8,12 +8,24 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.2.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+                abiFilters "arm64-v8a", "x86_64"
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
         }
     }
     buildTypes {
@@ -40,6 +52,19 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // CameraX dependencies
+    def camerax_version = "1.4.1"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    implementation "androidx.camera:camera-view:${camerax_version}"
+    
+    // Guava dependency for ListenableFuture (required by CameraX)
+    implementation "com.google.guava:guava:33.0.0-android"
+    
+    // Exif interface for processing photo rotations
+    implementation "androidx.exifinterface:exifinterface:1.3.7"
 }
 
 apply from: 'capacitor.build.gradle'
@@ -52,3 +77,62 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+
+// Copy output APKs to GoogleDrive folder automatically
+tasks.register('copyApkToGoogleDrive') {
+    doLast {
+        def projectRootDebugDir = file("../../debug")
+        if (!projectRootDebugDir.exists()) {
+            projectRootDebugDir.mkdirs()
+        }
+        
+        // Find debug APK inside Gradle's outputs
+        def gradleDebugApk = file("${project.layout.buildDirectory.get().asFile}/outputs/apk/debug/app-debug.apk")
+        if (gradleDebugApk.exists()) {
+            // First copy to project root's debug folder (C:\Users\Owner\Documents\Antigravity\SPC\debug)
+            copy {
+                from gradleDebugApk
+                into projectRootDebugDir
+                rename { "hanamikke-debug.apk" }
+            }
+            println "Copied Debug APK to project root debug folder successfully!"
+            
+            // Then copy from project root's debug folder to Google Drive
+            def debugApkCopy = file("../../debug/hanamikke-debug.apk")
+            if (debugApkCopy.exists()) {
+                def targetDir = file("C:/Users/Owner/Documents/GoogleDrive/hanamikke")
+                if (!targetDir.exists()) {
+                    targetDir.mkdirs()
+                }
+                copy {
+                    from debugApkCopy
+                    into targetDir
+                }
+                println "Copied Debug APK to GoogleDrive successfully!"
+            }
+        }
+
+        // Find release APK
+        def releaseApk = file("${project.layout.buildDirectory.get().asFile}/outputs/apk/release/app-release-unsigned.apk")
+        if (releaseApk.exists()) {
+            def targetDir = file("C:/Users/Owner/Documents/GoogleDrive/hanamikke")
+            if (!targetDir.exists()) {
+                targetDir.mkdirs()
+            }
+            copy {
+                from releaseApk
+                into targetDir
+                rename { "hanamikke-release.apk" }
+            }
+            println "Copied Release APK to GoogleDrive successfully!"
+        }
+    }
+}
+
+// Hook it after assemble tasks run
+tasks.configureEach { task ->
+    if (task.name == 'assembleDebug' || task.name == 'assembleRelease') {
+        task.finalizedBy 'copyApkToGoogleDrive'
+    }
+}
+

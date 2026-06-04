@@ -22,7 +22,7 @@
       <div class="header-logo-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <div class="header-logo" id="header-logo-btn" style="cursor: pointer;" title="ロゴバッジを変更">
           <span class="logo-icon" id="logo-icon-emoji">🌸</span>
-          <h1 class="logo-title">はなみっけ</h1>
+          <h1 class="logo-title">はなみっけ <span class="app-version">Ver 1.2.6</span></h1>
         </div>
         <button class="settings-btn" id="open-settings-btn" aria-label="設定">
           ⚙️
@@ -178,9 +178,17 @@
 
       <!-- SCREEN: SCAN -->
       <section id="screen-scan" class="app-screen">
-        <div class="scan-header-bar">
-          <h2>植物スキャン</h2>
-          <span class="scan-mode-indicator" id="scan-mode-lbl">デモモード</span>
+        <div class="scan-header-bar" style="display: flex; flex-direction: column; gap: 8px;">
+          <h2 style="font-size: 18px; font-weight: 800; margin: 0; color: var(--color-primary-dark); letter-spacing: 1px;">🌿 植物スキャン</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span class="scan-mode-indicator" id="scan-mode-lbl" style="margin: 0; align-self: flex-start;">デモモード</span>
+            <!-- AI Resolution Toggle -->
+            <div id="ai-res-toggle-container" style="display: flex; background: var(--color-bg-light); border: 1.5px solid var(--color-border); border-radius: 6px; padding: 2px;">
+              <button class="ai-res-btn" data-res="480" style="font-size: 10px; font-weight: bold; padding: 4px 6px; border-radius: 4px; border: none; background: transparent; color: var(--color-text-muted); cursor: pointer;">普通</button>
+              <button class="ai-res-btn active" data-res="768" style="font-size: 10px; font-weight: bold; padding: 4px 6px; border-radius: 4px; border: none; background: var(--color-primary-light); color: var(--color-primary-dark); cursor: pointer;">高精度</button>
+              <button class="ai-res-btn" data-res="1920" style="font-size: 10px; font-weight: bold; padding: 4px 6px; border-radius: 4px; border: none; background: transparent; color: var(--color-text-muted); cursor: pointer;">超高精度</button>
+            </div>
+          </div>
         </div>
 
         <!-- Camera Settings Toggle Bar (Aspect & Quality) -->
@@ -200,8 +208,11 @@
         </div>
 
         <!-- Viewfinder Area -->
-        <div class="scanner-viewfinder-container">
+        <div class="scanner-viewfinder-container" style="margin-bottom: 12px;">
           <div class="scanner-border-corners"></div>
+          
+          <!-- Vignette Overlay -->
+          <div id="vignette-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 7; border-radius: inherit; transition: background 0.15s ease; background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0) 100%);"></div>
           
           <!-- Live Video Stream -->
           <video id="webcam" autoplay playsinline style="display: none;"></video>
@@ -224,6 +235,143 @@
 
           <!-- Pulsing Laser Line -->
           <div class="scanner-laser-line" id="scanner-laser"></div>
+        </div>
+
+        <!-- Beauty Control Panel -->
+        <div class="beauty-panel" id="scan-beauty-panel" style="margin: 5px 15px 15px 15px; padding: 12px 14px; background-color: var(--color-card-white); border-radius: var(--border-radius-sm); border: 1.5px solid var(--color-border); z-index: 5; display: flex; flex-direction: column; gap: 10px;">
+          
+          <!-- Header and Toggle Details button -->
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; font-weight: bold; color: var(--color-text-dark); display: flex; align-items: center; gap: 4px;">✨ 植物美化補正</span>
+            <button id="toggle-details-btn" style="background: none; border: none; font-size: 11px; font-weight: bold; color: var(--color-primary-dark); cursor: pointer; display: flex; align-items: center; gap: 2px;">
+              詳細調整 <span id="toggle-details-arrow">▼</span>
+            </button>
+          </div>
+          
+          <!-- Weather Row -->
+          <div style="font-size: 10px; font-weight: bold; color: var(--color-text-muted); margin-bottom: 2px;">🌤️ 天候</div>
+          <div class="weather-row" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+            <button class="weather-btn active" data-weather="sunny" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-primary); background-color: var(--color-primary-light); color: var(--color-primary-dark); cursor: pointer; transition: all 0.2s;">晴れ</button>
+            <button class="weather-btn" data-weather="light-cloudy" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">薄曇り</button>
+            <button class="weather-btn" data-weather="cloudy" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">曇り</button>
+            <button class="weather-btn" data-weather="rainy" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">雨</button>
+          </div>
+          
+          <!-- Style Row -->
+          <div style="font-size: 10px; font-weight: bold; color: var(--color-text-muted); margin-top: 4px; margin-bottom: 2px;">🎨 スタイル・被写体</div>
+          <div class="style-row" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+            <button class="preset-btn active" data-preset="natural" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-primary); background-color: var(--color-primary-light); color: var(--color-primary-dark); cursor: pointer; transition: all 0.2s;">ナチュラル</button>
+            <button class="preset-btn" data-preset="vivid" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">ビビッド</button>
+            <button class="preset-btn" data-preset="flower" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">花 🌸</button>
+            <button class="preset-btn" data-preset="forest" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">森 🌳</button>
+            <button class="preset-btn" data-preset="warm" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">ウォーム</button>
+            <button class="preset-btn" data-preset="cinema" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">シネマ</button>
+            <button class="preset-btn" data-preset="custom" style="flex: 1 0 auto; font-size: 11px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--color-border); background-color: var(--color-bg-light); color: var(--color-text-dark); cursor: pointer; transition: all 0.2s;">カスタム</button>
+          </div>
+          
+          <!-- Detailed Sliders (Collapsible) -->
+          <div id="details-sliders-container" style="display: none; flex-direction: column; gap: 8px; border-top: 1.5px solid var(--color-border); padding-top: 8px; margin-top: 2px;">
+            
+            <!-- Brightness Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>💡 明るさ</span>
+                <span id="val-brightness" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-brightness" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Contrast Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>☯️ コントラスト</span>
+                <span id="val-contrast" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-contrast" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Saturation Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🎨 彩度</span>
+                <span id="val-saturation" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-saturation" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Warmth Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🌡️ 色温度</span>
+                <span id="val-warmth" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-warmth" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Vignette Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🔲 ビネット</span>
+                <span id="val-vignette" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-vignette" min="0" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Green Saturation Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🌿 緑の彩度</span>
+                <span id="val-green-sat" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-green-sat" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Flower Saturation Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🌸 花の彩度</span>
+                <span id="val-flower-sat" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-flower-sat" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Sky Blue Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🌤️ 空の青さ</span>
+                <span id="val-sky-blue" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-sky-blue" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Clarity Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🔍 明瞭度 (Clarity)</span>
+                <span id="val-clarity" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-clarity" min="0" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Shadow Lightness Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>🌑 シャドウ持ち上げ</span>
+                <span id="val-shadow" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-shadow" min="-100" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+            <!-- Soft Focus Slider -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-dark); font-weight: 500;">
+                <span>✨ ソフトフォーカス</span>
+                <span id="val-soft-focus" style="font-family: var(--font-numbers); color: var(--color-primary-dark); font-weight: 700;">0%</span>
+              </div>
+              <input type="range" id="slider-soft-focus" min="0" max="100" value="0" style="width: 100%; height: 5px; -webkit-appearance: none; background: var(--color-border); border-radius: 3px; outline: none; cursor: pointer;">
+            </div>
+
+          </div>
         </div>
 
         <!-- Controls Area -->
